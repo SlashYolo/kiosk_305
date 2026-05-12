@@ -1,0 +1,15 @@
+# MAI Kiosk — Python зависимости
+# Установка: pip install -r requirements.txt
+
+# Веб-сервер (прокси между браузером и API МАИ)
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# HTTP-запросы к API и сайту МАИ
+requests>=2.31.0
+
+# Парсинг HTML страниц профилей преподавателей
+beautifulsoup4>=4.12.0
+
+# Шифрование Wi-Fi credentials (опционально, только для wifi_schedule_update.py)
+cryptography>=41.0.0
