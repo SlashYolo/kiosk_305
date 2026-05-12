@@ -1,0 +1,2065 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>МАИ — Информационный стенд</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════
+   DESIGN TOKENS — меняй только эти 3 переменные
+   ══════════════════════════════════════════════ */
+:root {
+  --c-bg:      #FFFFFF;
+  --c-text:    #0E1117;
+  --c-accent:  #0271FF;
+
+  --c-bg2:     #F3F6FB;
+  --c-bg3:     #E8EDF7;
+  --c-card:    #FFFFFF;
+  --c-text2:   #52596B;
+  --c-text3:   #9AA3B5;
+  --c-ton-acc: #FFFFFF;
+  --c-al:      #E5F0FF;
+  --c-am:      #B3D1FF;
+  --c-ah:      #0059CC;
+  --c-ad:      #0047A8;
+  --c-border:  #E2E7F0;
+  --c-bstr:    #C8D0E0;
+  --c-bacc:    #66AAFF;
+
+  --r-sm: 10px; --r-md: 16px; --r-lg: 24px; --r-xl: 32px; --r-2xl: 48px; --r-f: 9999px;
+  --ease-o: cubic-bezier(0,.2,.2,1);
+  --ease-s: cubic-bezier(.34,1.56,.64,1);
+  --ease-io: cubic-bezier(.4,0,.2,1);
+  --dur-f: 150ms; --dur-b: 250ms; --dur-s: 400ms; --dur-sl: 600ms;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth;}
+body{background:var(--c-bg);color:var(--c-text);font-family:'Manrope',system-ui,sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--c-border);border-radius:99px;}
+*{-webkit-tap-highlight-color:transparent;}
+button,a,[role=button]{cursor:pointer;}
+input,button,select{font-family:inherit;}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;min-height:100vh;}
+.page{display:none;flex:1;animation:fadeInUp .5s var(--ease-o) both;}
+.page.active{display:flex;flex-direction:column;}
+
+/* ── NAV ── */
+.nav{
+  position:sticky;top:0;z-index:200;
+  display:flex;align-items:center;gap:0;
+  height:76px;padding:0 48px;
+  background:rgba(255,255,255,0.88);
+  backdrop-filter:blur(24px);
+  border-bottom:1.5px solid var(--c-border);
+}
+.nav__logo{
+  font-size:22px;font-weight:800;letter-spacing:-.04em;
+  color:var(--c-text);text-decoration:none;white-space:nowrap;margin-right:48px;
+}
+.nav__logo em{color:var(--c-accent);font-style:normal;}
+.nav__tabs{display:flex;align-items:center;gap:4px;flex:1;}
+.nav__tab{
+  display:flex;align-items:center;gap:8px;
+  padding:0 20px;height:44px;
+  font-size:15px;font-weight:600;
+  color:var(--c-text2);text-decoration:none;
+  border-radius:var(--r-md);border:none;background:transparent;
+  transition:background var(--dur-f),color var(--dur-f);
+  white-space:nowrap;
+}
+.nav__tab:hover{background:var(--c-bg2);color:var(--c-text);}
+.nav__tab.active{background:var(--c-al);color:var(--c-accent);}
+.nav__tab svg{flex-shrink:0;}
+.nav__time{
+  margin-left:auto;padding:8px 16px;
+  background:var(--c-bg2);border-radius:var(--r-md);
+  color:var(--c-text2);
+  white-space:nowrap;text-align:right;line-height:1.2;
+}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:none;border-radius:var(--r-f);cursor:pointer;
+  font-family:inherit;font-weight:700;letter-spacing:.01em;
+  transition:transform var(--dur-b) var(--ease-s),box-shadow var(--dur-b),background var(--dur-f);
+  white-space:nowrap;user-select:none;
+}
+.btn:active{transform:scale(.96)!important;}
+.btn--p{height:52px;padding:0 32px;font-size:15px;background:var(--c-accent);color:var(--c-ton-acc);box-shadow:0 6px 24px rgba(2,113,255,.3);}
+.btn--p:hover{background:var(--c-ah);transform:translateY(-2px);box-shadow:0 12px 36px rgba(2,113,255,.4);}
+.btn--o{height:52px;padding:0 28px;font-size:15px;background:transparent;color:var(--c-accent);border:2px solid var(--c-accent);}
+.btn--o:hover{background:var(--c-al);transform:translateY(-2px);}
+.btn--g{height:48px;padding:0 24px;font-size:14px;background:var(--c-bg2);color:var(--c-text2);border:1.5px solid var(--c-border);}
+.btn--g:hover{background:var(--c-bg3);color:var(--c-text);}
+.btn--lg{height:64px;padding:0 44px;font-size:18px;border-radius:var(--r-xl);}
+.btn--sm{height:40px;padding:0 18px;font-size:13px;}
+.btn--ic{width:44px;height:44px;padding:0;border-radius:var(--r-md);}
+
+/* ── CARDS ── */
+.card{
+  background:var(--c-card);border:1.5px solid var(--c-border);
+  border-radius:var(--r-xl);padding:32px;
+  transition:transform var(--dur-s) var(--ease-o),box-shadow var(--dur-s),border-color var(--dur-b);
+}
+.card--hov:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,.08);border-color:var(--c-bacc);}
+.card--accent{background:var(--c-accent);border-color:var(--c-accent);color:white;}
+.card--dark{background:var(--c-text);border-color:var(--c-text);color:white;}
+.card--sub{background:var(--c-bg2);border-color:transparent;}
+.card--sm{padding:20px 24px;border-radius:var(--r-lg);}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:var(--r-f);font-size:12px;font-weight:700;}
+.badge--a{background:var(--c-al);color:var(--c-ad);}
+.badge--s{background:var(--c-accent);color:white;}
+.badge--m{background:var(--c-bg2);color:var(--c-text2);}
+.badge--ok{background:#E6F7EE;color:#1A7A45;}
+.badge--warn{background:#FFF4E0;color:#8A5800;}
+.badge--live{background:#FFE8E8;color:#C0392B;}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;animation:pulse 2s ease infinite;}
+
+/* ── FORM ── */
+.search-wrap{position:relative;}
+.search-icon{position:absolute;left:22px;top:50%;transform:translateY(-50%);color:var(--c-text3);pointer-events:none;}
+.input{
+  width:100%;height:60px;padding:0 24px 0 52px;
+  background:var(--c-bg2);border:2px solid var(--c-border);
+  border-radius:var(--r-xl);font-size:16px;font-weight:500;
+  color:var(--c-text);outline:none;
+  transition:border-color var(--dur-f),box-shadow var(--dur-f),background var(--dur-f);
+}
+.input:focus{border-color:var(--c-accent);background:white;box-shadow:0 0 0 5px rgba(2,113,255,.1);}
+.input::placeholder{color:var(--c-text3);}
+.dropdown{
+  position:absolute;top:calc(100% + 8px);left:0;right:0;
+  background:white;border:1.5px solid var(--c-border);
+  border-radius:var(--r-xl);box-shadow:0 20px 60px rgba(0,0,0,.15);
+  max-height:400px;overflow-y:auto;z-index:9999;
+  animation:scaleIn .2s var(--ease-o) both;transform-origin:top center;
+}
+.dropdown-item{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 20px;font-size:15px;font-weight:500;
+  cursor:pointer;transition:background var(--dur-f);
+  border-bottom:1px solid var(--c-border);
+}
+.dropdown-item:last-child{border-bottom:none;}
+.dropdown-item:hover{background:var(--c-al);}
+.dropdown-item:hover .di-name{color:var(--c-accent);}
+.di-name{font-weight:600;flex:1;}
+.di-sub{font-size:12px;color:var(--c-text3);}
+
+/* ── SCHEDULE ── */
+.week-nav{display:flex;align-items:center;gap:12px;}
+.week-nav__label{font-size:16px;font-weight:700;flex:1;text-align:center;}
+.day-grid{display:flex;flex-direction:column;gap:16px;}
+.day-block{border-radius:var(--r-xl);overflow:hidden;border:1.5px solid var(--c-border);background:white;}
+.day-head{
+  display:flex;align-items:center;gap:16px;
+  padding:16px 24px;background:var(--c-bg2);border-bottom:1.5px solid var(--c-border);
+}
+.day-name{font-size:15px;font-weight:700;}
+.day-date{font-size:13px;color:var(--c-text2);}
+.lessons-list{display:flex;flex-direction:column;}
+.lesson{
+  display:flex;gap:20px;align-items:flex-start;
+  padding:18px 24px;border-bottom:1px solid var(--c-border);
+  transition:background var(--dur-f);cursor:default;
+}
+.lesson:last-child{border-bottom:none;}
+.lesson:hover{background:var(--c-bg2);}
+.lesson.current{background:var(--c-al);border-left:4px solid var(--c-accent);}
+.lesson__time{
+  min-width:64px;text-align:center;padding-top:2px;flex-shrink:0;
+}
+.lesson__time-s{font-size:16px;font-weight:800;color:var(--c-accent);line-height:1;}
+.lesson__time-e{font-size:12px;color:var(--c-text3);margin-top:3px;}
+.lesson__body{flex:1;min-width:0;}
+.lesson__name{font-size:15px;font-weight:700;line-height:1.3;margin-bottom:6px;}
+.lesson__meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.lesson__teacher{
+  display:flex;align-items:center;gap:6px;
+  font-size:13px;font-weight:600;color:var(--c-accent);
+  background:var(--c-al);padding:3px 10px;border-radius:var(--r-f);
+}
+.lesson__room{
+  display:flex;align-items:center;gap:5px;
+  font-size:13px;color:var(--c-text2);font-weight:500;
+}
+.lesson__type{
+  font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 8px;border-radius:var(--r-f);
+}
+.type-lk{background:#EEF2FF;color:#4F46E5;}
+.type-lr{background:#FFF0F0;color:#DC2626;}
+.type-pz{background:#F0FFF4;color:#16A34A;}
+.type-ex{background:#FFFBEB;color:#D97706;}
+.type-other{background:var(--c-bg2);color:var(--c-text3);}
+
+/* ── TAB SWITCHER (schedule types) ── */
+.type-tabs{display:flex;gap:8px;background:var(--c-bg2);padding:6px;border-radius:var(--r-xl);}
+.type-tab{
+  flex:1;height:48px;padding:0 20px;
+  font-size:14px;font-weight:600;color:var(--c-text2);
+  background:transparent;border:none;border-radius:var(--r-lg);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:background var(--dur-b) var(--ease-o),color var(--dur-b),box-shadow var(--dur-b);
+}
+.type-tab.active{
+  background:white;color:var(--c-accent);
+  box-shadow:0 2px 12px rgba(0,0,0,.08);
+}
+
+/* ── HERO (schedule page) ── */
+.sched-hero{
+  padding:56px 64px 48px;
+  background:linear-gradient(135deg, white 0%, var(--c-al) 100%);
+  border-bottom:1.5px solid var(--c-border);
+  position:relative;
+}
+.sched-hero::before{
+  content:'';position:absolute;right:-120px;top:-120px;
+  width:480px;height:480px;border-radius:50%;
+  background:radial-gradient(circle, rgba(2,113,255,.06) 0%, transparent 70%);
+  pointer-events:none;
+}
+
+/* ── DEPT page ── */
+.dept-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.dept-hero{
+  padding:80px 64px;
+  background:var(--c-text);color:white;
+  position:relative;overflow:hidden;
+}
+.dept-hero::after{
+  content:'';position:absolute;right:-200px;bottom:-200px;
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle, rgba(2,113,255,.15) 0%, transparent 70%);
+}
+.dept-hero__title{font-size:3rem;font-weight:800;letter-spacing:-.04em;line-height:1.05;margin-bottom:20px;position:relative;}
+.dept-hero__sub{font-size:1.1rem;color:rgba(255,255,255,.65);line-height:1.7;max-width:560px;position:relative;}
+.person-card{
+  display:flex;align-items:center;gap:16px;
+  padding:20px 24px;background:white;
+  border:1.5px solid var(--c-border);border-radius:var(--r-lg);
+  transition:transform var(--dur-b) var(--ease-o),box-shadow var(--dur-b),border-color var(--dur-b);
+}
+.person-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.08);border-color:var(--c-bacc);}
+.avatar{
+  width:52px;height:52px;border-radius:50%;flex-shrink:0;
+  background:var(--c-al);display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:800;color:var(--c-accent);
+}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--c-border);}
+.stat-cell{background:white;padding:32px 28px;}
+.stat-cell:hover{background:var(--c-bg2);}
+.stat-n{font-size:2.4rem;font-weight:800;letter-spacing:-.04em;color:var(--c-text);line-height:1;}
+.stat-n span{color:var(--c-accent);}
+.stat-l{font-size:13px;color:var(--c-text2);margin-top:6px;font-weight:500;}
+
+/* ── PROGRAMS page ── */
+.prog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.prog-card{
+  background:white;border:1.5px solid var(--c-border);border-radius:var(--r-xl);
+  padding:32px;cursor:pointer;
+  transition:transform var(--dur-s) var(--ease-o),box-shadow var(--dur-s),border-color var(--dur-b);
+}
+.prog-card:hover{transform:translateY(-8px);box-shadow:0 24px 80px rgba(0,0,0,.1);border-color:var(--c-bacc);}
+.prog-card:active{transform:translateY(-4px) scale(.99);}
+.prog-icon{
+  width:60px;height:60px;border-radius:var(--r-md);
+  background:var(--c-al);display:flex;align-items:center;justify-content:center;
+  font-size:28px;margin-bottom:20px;
+  transition:background var(--dur-b) var(--ease-s),transform var(--dur-b) var(--ease-s);
+}
+.prog-card:hover .prog-icon{background:var(--c-accent);transform:scale(1.1) rotate(-6deg);}
+.prog-level{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c-accent);margin-bottom:10px;}
+.prog-name{font-size:18px;font-weight:800;letter-spacing:-.01em;line-height:1.2;margin-bottom:10px;}
+.prog-desc{font-size:13px;color:var(--c-text2);line-height:1.65;margin-bottom:20px;}
+.prog-meta{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ── LOADING & EMPTY ── */
+.loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:80px;color:var(--c-text2);}
+.spinner{width:44px;height:44px;border:3px solid var(--c-border);border-top-color:var(--c-accent);border-radius:50%;animation:spin .8s linear infinite;}
+.empty-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:80px;color:var(--c-text2);text-align:center;}
+.empty-icon{font-size:56px;margin-bottom:4px;animation:float 3s ease-in-out infinite;}
+
+/* ── TOAST ── */
+.toast-wrap{position:fixed;bottom:32px;right:32px;z-index:500;display:flex;flex-direction:column;gap:10px;pointer-events:none;}
+.toast{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 20px;background:var(--c-text);color:white;
+  border-radius:var(--r-lg);font-size:14px;font-weight:600;
+  box-shadow:0 12px 40px rgba(0,0,0,.2);pointer-events:all;
+  animation:toastIn .4s var(--ease-s) both;
+}
+.toast.out{animation:toastOut .3s var(--ease-o) both;}
+
+/* ── LOADER BAR ── */
+.lbar{position:fixed;top:0;left:0;height:3px;background:var(--c-accent);width:0;z-index:999;border-radius:0 2px 2px 0;box-shadow:0 0 10px var(--c-accent);transition:width .4s var(--ease-o),opacity .3s;}
+
+/* ── REVEAL ── */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .6s var(--ease-o),transform .6s var(--ease-o);}
+.reveal.v{opacity:1;transform:translateY(0);}
+.rd1{transition-delay:.1s;} .rd2{transition-delay:.2s;} .rd3{transition-delay:.3s;} .rd4{transition-delay:.4s;}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.93);}to{opacity:1;transform:scale(1);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(2,113,255,.5);}70%{box-shadow:0 0 0 8px rgba(2,113,255,0);}}
+@keyframes toastIn{from{opacity:0;transform:translateX(50px) scale(.9);}to{opacity:1;transform:translateX(0) scale(1);}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0);}to{opacity:0;transform:translateX(50px);}}
+@keyframes shimmer{from{background-position:-400px 0;}to{background-position:400px 0;}}
+.skeleton{background:linear-gradient(90deg,var(--c-bg2) 25%,var(--c-bg3) 50%,var(--c-bg2) 75%);background-size:800px 100%;animation:shimmer 1.5s infinite;}
+
+/* ── SECTION util ── */
+.section-label{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--c-accent);margin-bottom:16px;}
+.section-label::before{content:'';display:block;width:18px;height:2px;background:var(--c-accent);border-radius:2px;}
+.section-title{font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:12px;}
+.section-sub{font-size:1rem;color:var(--c-text2);line-height:1.7;max-width:580px;margin-bottom:48px;}
+
+/* ── MISC ── */
+.divider{height:1.5px;background:var(--c-border);border:none;margin:0;}
+/* Заголовки — одна строка, перенос только при нехватке места */
+h1, h2 { text-wrap: balance; }
+.heading-nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.page-body{flex:1;overflow-y:auto;}
+.inner{max-width:1400px;margin:0 auto;padding:0 64px;}
+
+/* ── FAQ ── */
+.faq-item{border:1.5px solid var(--c-border);border-radius:var(--r-lg);margin-bottom:10px;overflow:hidden;transition:border-color var(--dur-b);}
+.faq-item.open{border-color:var(--c-accent);}
+.faq-q{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;font-size:16px;font-weight:600;cursor:pointer;user-select:none;transition:background var(--dur-f);}
+.faq-q:hover{background:var(--c-bg2);}
+.faq-item.open .faq-q{background:var(--c-al);color:var(--c-accent);}
+.faq-chev{width:28px;height:28px;border-radius:50%;background:var(--c-bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .3s var(--ease-o),background .2s;}
+.faq-item.open .faq-chev{transform:rotate(180deg);background:var(--c-accent);}
+.faq-item.open .faq-chev svg{stroke:white;}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .4s var(--ease-o),padding .3s;font-size:14px;color:var(--c-text2);line-height:1.7;padding:0 24px;}
+.faq-item.open .faq-a{max-height:200px;padding:0 24px 20px;}
+
+.kb-overlay{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;}
+.kb-overlay.open{pointer-events:all;}
+.kb-backdrop{flex:1;background:rgba(0,0,0,0);transition:background .3s;}
+.kb-overlay.open .kb-backdrop{background:rgba(0,0,0,0.22);}
+/* Полоса подсказок */
+.kb-suggestions{display:flex;align-items:center;gap:8px;padding:0 14px;overflow-x:auto;overflow-y:hidden;background:rgba(240,243,248,0.97);border-top:1.5px solid var(--c-border);min-height:0;max-height:0;transition:max-height .25s var(--ease-o),padding .25s;scrollbar-width:none;}
+.kb-suggestions::-webkit-scrollbar{display:none;}
+.kb-suggestions.has-items{max-height:72px;padding:10px 14px;}
+.kb-suggestion-chip{display:flex;align-items:center;padding:10px 20px;background:white;border:1.5px solid var(--c-border);border-radius:var(--r-f);font-size:15px;font-weight:700;color:var(--c-text);white-space:nowrap;cursor:pointer;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.06);transition:background .15s,border-color .15s,transform .15s var(--ease-s);touch-action:manipulation;}
+.kb-suggestion-chip:active{background:var(--c-al);border-color:var(--c-bacc);color:var(--c-accent);transform:translateY(-2px);}
+
+/* Ручка ресайза */
+.kb-resize-handle{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:10px 0 6px;cursor:ns-resize;
+  user-select:none;touch-action:none;
+  background:#E2E6EC;
+  border-radius:28px 28px 0 0;
+}
+.kb-resize-bar{
+  width:40px;height:5px;border-radius:3px;
+  background:#B0B9C6;
+  transition:background .2s,width .2s;
+}
+.kb-resize-handle:hover .kb-resize-bar,
+.kb-resize-handle.dragging .kb-resize-bar{background:var(--c-accent);width:56px;}
+.kb-resize-hint{
+  font-size:10px;font-weight:600;letter-spacing:.04em;
+  color:#B0B9C6;text-transform:uppercase;
+  opacity:0;transition:opacity .2s;
+  pointer-events:none;
+}
+.kb-resize-handle:hover .kb-resize-hint{opacity:1;}
+
+.kb{background:#E2E6EC;border-radius:0;padding:10px 14px 28px;box-shadow:0 -8px 48px rgba(0,0,0,.2);transform:translateY(100%);transition:transform .35s cubic-bezier(.34,1.1,.64,1);user-select:none;overflow:hidden;}
+.kb-overlay.open .kb{transform:translateY(0);}
+
+/* Масштабирование клавиш */
+.kb-rows{display:flex;flex-direction:column;gap:var(--kb-gap, 10px);}
+.kb-row{display:flex;gap:var(--kb-gap, 7px);justify-content:center;}
+.kb-key{display:flex;align-items:center;justify-content:center;height:var(--kb-key-h, 62px);min-width:var(--kb-key-min, 58px);padding:0 8px;background:white;border-radius:12px;font-size:var(--kb-font, 21px);font-weight:600;color:var(--c-text);box-shadow:0 3px 0 #A8B0BE;border:none;cursor:pointer;flex:1;max-width:var(--kb-key-max, 76px);transition:transform .08s,box-shadow .08s,background .08s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.kb-key:active,.kb-key.pressed{transform:translateY(3px);box-shadow:0 0 0 #A8B0BE;background:#D4D9E1;}
+.kb-key--space{flex:5;max-width:420px;font-size:var(--kb-font-sm, 14px);font-weight:700;color:var(--c-text2);}
+.kb-key--action{background:var(--c-accent);color:white;flex:1.8;max-width:120px;font-size:var(--kb-font-sm, 14px);font-weight:700;box-shadow:0 3px 0 var(--c-ad);}
+.kb-key--action:active,.kb-key--action.pressed{background:var(--c-ah);box-shadow:0 0 0 var(--c-ad);}
+.kb-key--dark{background:#B0B9C6;color:#1E2430;box-shadow:0 3px 0 #8A95A3;font-size:var(--kb-font-sm, 14px);font-weight:700;}
+.kb-key--dark:active,.kb-key--dark.pressed{background:#9AA4B0;box-shadow:0 0 0 #8A95A3;}
+.kb-key--wide{flex:1.6;max-width:112px;}
+.kb-key--shift-active{background:var(--c-al)!important;color:var(--c-accent)!important;}
+.kb-display{display:flex;align-items:center;gap:12px;background:white;border-radius:16px;padding:13px 20px;margin-bottom:14px;border:2px solid var(--c-border);box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.kb-display-text{flex:1;font-size:21px;font-weight:600;color:var(--c-text);min-height:28px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.kb-display-text.placeholder{color:var(--c-text3);font-weight:400;}
+.kb-cursor{display:inline-block;width:2px;height:26px;background:var(--c-accent);border-radius:2px;animation:blink 1s step-end infinite;flex-shrink:0;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+.kb-rows{display:flex;flex-direction:column;gap:10px;}
+.kb-row{display:flex;gap:7px;justify-content:center;}
+.kb-key{display:flex;align-items:center;justify-content:center;height:62px;min-width:58px;padding:0 8px;background:white;border-radius:12px;font-size:21px;font-weight:600;color:var(--c-text);box-shadow:0 3px 0 #A8B0BE;border:none;cursor:pointer;flex:1;max-width:76px;transition:transform .08s,box-shadow .08s,background .08s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.kb-key:active,.kb-key.pressed{transform:translateY(3px);box-shadow:0 0 0 #A8B0BE;background:#D4D9E1;}
+.kb-key--space{flex:5;max-width:420px;font-size:14px;font-weight:700;color:var(--c-text2);}
+.kb-key--action{background:var(--c-accent);color:white;flex:1.8;max-width:120px;font-size:14px;font-weight:700;box-shadow:0 3px 0 var(--c-ad);}
+.kb-key--action:active,.kb-key--action.pressed{background:var(--c-ah);box-shadow:0 0 0 var(--c-ad);}
+.kb-key--dark{background:#B0B9C6;color:#1E2430;box-shadow:0 3px 0 #8A95A3;font-size:14px;font-weight:700;}
+.kb-key--dark:active,.kb-key--dark.pressed{background:#9AA4B0;box-shadow:0 0 0 #8A95A3;}
+.kb-key--wide{flex:1.6;max-width:112px;}
+.kb-key--shift-active{background:var(--c-al)!important;color:var(--c-accent)!important;}
+.exit-toast{position:fixed;top:50%;left:50%;z-index:20000;transform:translate(-50%,-50%) scale(.88);background:rgba(14,17,23,.96);color:white;border-radius:28px;padding:44px 64px;text-align:center;pointer-events:none;opacity:0;transition:opacity .25s,transform .3s cubic-bezier(.34,1.56,.64,1);backdrop-filter:blur(20px);border:1.5px solid rgba(255,255,255,.1);}
+.exit-toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:all;}
+.exit-toast__title{font-size:26px;font-weight:800;margin-bottom:8px;}
+.exit-toast__sub{font-size:14px;color:rgba(255,255,255,.45);margin-bottom:32px;letter-spacing:.03em;}
+.exit-toast__btns{display:flex;gap:14px;justify-content:center;}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:fadeInUp .3s var(--ease-o) both;}
+.modal-bg.out{animation:none;opacity:0;transition:opacity .25s;}
+.modal{background:white;border-radius:var(--r-2xl);padding:48px;max-width:680px;width:90%;max-height:85vh;overflow-y:auto;animation:scaleIn .35s var(--ease-s) both;}
+.modal-close{position:absolute;top:20px;right:20px;width:40px;height:40px;border-radius:50%;background:var(--c-bg2);border:none;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background var(--dur-f);}
+.modal-close:hover{background:var(--c-bg3);}
+
+@media(max-width:900px){
+  .prog-grid{grid-template-columns:repeat(2,1fr);}
+  .dept-grid{grid-template-columns:1fr;}
+  .stat-row{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+<div class="lbar" id="lbar"></div>
+<div class="toast-wrap" id="toasts"></div>
+
+<div class="app">
+<!-- ══ NAV ══ -->
+<nav class="nav">
+  <a href="#" class="nav__logo" onclick="navigate('schedule');return false;">МАИ<em>.</em>Стенд</a>
+  <div class="nav__tabs">
+    <button class="nav__tab active" data-page="schedule" onclick="navigate('schedule')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Расписание
+    </button>
+    <button class="nav__tab" data-page="dept" onclick="navigate('dept')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      О кафедре
+    </button>
+    <button class="nav__tab" data-page="teachers305" onclick="navigate('teachers305')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Преподаватели
+    </button>
+    <button class="nav__tab" data-page="programs" onclick="navigate('programs')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Программы обучения
+    </button>
+    <button class="nav__tab" data-page="faq" onclick="navigate('faq')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>
+      ЧаВо
+    </button>
+  </div>
+  <div class="nav__time" id="clock">
+    <span id="clock-dow" style="font-size:12px;opacity:.7;letter-spacing:.06em;display:block;text-align:right;margin-bottom:1px;"></span>
+    <span id="clock-date" style="font-size:12px;opacity:.7;display:block;text-align:right;margin-bottom:2px;"></span>
+    <span id="clock-time" style="font-size:16px;font-weight:800;letter-spacing:.04em;"></span>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════
+     PAGE: РАСПИСАНИЕ
+     ══════════════════════════════════════ -->
+<div class="page active" id="page-schedule">
+  <div class="sched-hero">
+    <div style="max-width:860px;margin:0 auto;text-align:center;">
+      <div class="section-label" style="justify-content:center;">Расписание МАИ</div>
+      <h1 style="font-size:2.6rem;font-weight:800;letter-spacing:-.04em;line-height:1.05;margin-bottom:12px;">
+        Найди своё расписание
+      </h1>
+      <p style="font-size:1rem;color:var(--c-text2);margin-bottom:36px;">Группа или преподаватель — данные с сервера МАИ</p>
+
+      <!-- Переключатель типа — делит экран на два -->
+      <div class="type-tabs" style="width:100%;margin-bottom:24px;">
+        <button class="type-tab active" id="tab-group" onclick="setSearchType('group')" style="flex:1;font-size:16px;height:56px;">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Группа
+        </button>
+        <button class="type-tab" id="tab-teacher" onclick="setSearchType('teacher')" style="flex:1;font-size:16px;height:56px;">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          Преподаватель
+        </button>
+      </div>
+
+      <!-- Поиск — полная ширина с равными отступами -->
+      <div style="position:relative;width:100%;">
+        <div class="search-wrap">
+          <svg class="search-icon" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="input" id="searchInput"
+            placeholder="Введите название группы..."
+            autocomplete="off" spellcheck="false"
+            oninput="onSearchInput()"
+            onkeydown="onSearchKey(event)"
+            style="height:68px;font-size:18px;padding-left:58px;border-radius:var(--r-2xl);"
+          >
+        </div>
+        <div class="dropdown" id="dropdown" style="display:none;"></div>
+        <div id="searchHint" style="margin-top:10px;font-size:13px;color:var(--c-text3);display:flex;align-items:center;justify-content:center;gap:6px;">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01" stroke-width="2.5"/></svg>
+          <span id="searchHintText">Загружаем список групп...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Навигация по неделям + результаты -->
+  <div class="page-body">
+    <div class="inner" style="padding-top:24px;padding-bottom:60px;">
+
+      <!-- Статус-бар сети -->
+      <div id="netStatusBar" style="display:none;margin-bottom:16px;border-radius:var(--r-lg);padding:12px 20px;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600;transition:all .4s;">
+        <span id="netStatusIcon" style="font-size:18px;"></span>
+        <div>
+          <div id="netStatusTitle" style="font-weight:700;"></div>
+          <div id="netStatusSub" style="font-size:12px;font-weight:500;opacity:.75;margin-top:1px;"></div>
+        </div>
+        <div id="netStatusDot" style="width:8px;height:8px;border-radius:50%;margin-left:auto;flex-shrink:0;"></div>
+      </div>
+
+      <div id="schedResult"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: О КАФЕДРЕ
+     ══════════════════════════════════════ -->
+<div class="page" id="page-dept">
+  <div class="dept-hero">
+    <div class="inner" style="position:relative;z-index:1;">
+      <div style="display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:20px;">
+        <span style="display:block;width:18px;height:2px;background:rgba(255,255,255,.4);border-radius:2px;"></span>
+        Московский авиационный институт
+      </div>
+      <h1 class="dept-hero__title">Кафедра 305 <em style="font-style:normal;color:var(--c-accent);">«Пилотажно-навигационные и информационно-измерительные комплексы»</em></h1>
+      <p class="dept-hero__sub">Подготовка специалистов в области проектирования, разработки и эксплуатации информационно-измерительных и управляющих комплексов для авиационно-космических систем.</p>
+    </div>
+  </div>
+
+  <div class="stat-row reveal">
+    <div class="stat-cell"><div class="stat-n">60<span>+</span></div><div class="stat-l">Лет истории кафедры</div></div>
+    <div class="stat-cell rd1"><div class="stat-n">500<span>+</span></div><div class="stat-l">Выпускников в отрасли</div></div>
+    <div class="stat-cell rd2"><div class="stat-n">12</div><div class="stat-l">Докторов наук</div></div>
+    <div class="stat-cell rd3"><div class="stat-n">35<span>+</span></div><div class="stat-l">Кандидатов наук</div></div>
+  </div>
+
+  <div class="page-body">
+    <div class="inner" style="padding-top:60px;padding-bottom:60px;">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-bottom:64px;">
+        <div>
+          <div class="section-label">Миссия</div>
+          <h2 class="section-title reveal">О кафедре</h2>
+          <p style="color:var(--c-text2);line-height:1.8;margin-bottom:20px;" class="reveal">Кафедра 305 МАИ занимается подготовкой высококвалифицированных специалистов в области информационно-измерительных технологий для авиационной и космической промышленности России.</p>
+          <p style="color:var(--c-text2);line-height:1.8;margin-bottom:28px;" class="reveal">Учебный процесс сочетает фундаментальную теоретическую подготовку с практической работой на современном оборудовании в учебно-научных лабораториях кафедры.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;" class="reveal">
+            <span class="badge badge--a">🏛️ Основана в 1961 г.</span>
+            <span class="badge badge--ok">✓ Аккредитована</span>
+            <span class="badge badge--m">Факультет №3</span>
+          </div>
+        </div>
+        <div>
+          <div class="section-label">Направления</div>
+          <h2 class="section-title reveal">Научные школы</h2>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="card card--sub card--sm reveal" style="border-left:4px solid var(--c-accent);border-radius:0 var(--r-md) var(--r-md) 0;">
+              <div style="font-weight:700;margin-bottom:4px;">Авиационные ИИС</div>
+              <div style="font-size:13px;color:var(--c-text2);">Системы измерений и контроля для летательных аппаратов</div>
+            </div>
+            <div class="card card--sub card--sm reveal rd1" style="border-left:4px solid #7C3AED;border-radius:0 var(--r-md) var(--r-md) 0;">
+              <div style="font-weight:700;margin-bottom:4px;">Космические системы</div>
+              <div style="font-size:13px;color:var(--c-text2);">Бортовые комплексы управления и навигации КА</div>
+            </div>
+            <div class="card card--sub card--sm reveal rd2" style="border-left:4px solid #059669;border-radius:0 var(--r-md) var(--r-md) 0;">
+              <div style="font-weight:700;margin-bottom:4px;">Беспилотные системы</div>
+              <div style="font-size:13px;color:var(--c-text2);">ИВК для БПЛА, автопилоты, системы управления</div>
+            </div>
+            <div class="card card--sub card--sm reveal rd3" style="border-left:4px solid #D97706;border-radius:0 var(--r-md) var(--r-md) 0;">
+              <div style="font-weight:700;margin-bottom:4px;">Цифровая метрология</div>
+              <div style="font-size:13px;color:var(--c-text2);">Прецизионные цифровые измерения, IoT, Big Data</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider" style="margin-bottom:60px;">
+
+      <!-- Преподаватели -->
+      <div class="section-label">Коллектив</div>
+      <h2 class="section-title reveal">Руководство и профессора</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:60px;">
+        <div class="person-card reveal">
+          <div class="avatar">АД</div>
+          <div>
+            <div style="font-weight:700;font-size:15px;">Антонов Дмитрий Александрович</div>
+            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Заведующий кафедрой, д.т.н., профессор</div>
+          </div>
+        </div>
+        <div class="person-card reveal rd1">
+          <div class="avatar" style="background:#FFF0F9;color:#C026D3;">НМ</div>
+          <div>
+            <div style="font-weight:700;font-size:15px;">Нгуен Ныы Ман</div>
+            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Доцент, к.т.н.</div>
+          </div>
+        </div>
+        <div class="person-card reveal rd2">
+          <div class="avatar" style="background:#F0FFF4;color:#16A34A;">ИВ</div>
+          <div>
+            <div style="font-weight:700;font-size:15px;">Иванов Виктор Сергеевич</div>
+            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Профессор, д.т.н.</div>
+          </div>
+        </div>
+        <div class="person-card reveal rd1">
+          <div class="avatar" style="background:#FFFBEB;color:#D97706;">КА</div>
+          <div>
+            <div style="font-weight:700;font-size:15px;">Козлов Андрей Петрович</div>
+            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Доцент, к.т.н.</div>
+          </div>
+        </div>
+        <div class="person-card reveal rd2">
+          <div class="avatar" style="background:#FFF0F0;color:#DC2626;">СМ</div>
+          <div>
+            <div style="font-weight:700;font-size:15px;">Смирнов Михаил Игоревич</div>
+            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Ст. преподаватель</div>
+          </div>
+        </div>
+        <div class="person-card reveal rd3">
+          <div class="avatar" style="background:#F3E8FF;color:#7C3AED;">ЛА</div>
+          <div>
+            <div style="font-weight:700;font-size:15px;">Лебедева Анна Николаевна</div>
+            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Доцент, к.т.н.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Лаборатории -->
+      <hr class="divider" style="margin-bottom:60px;">
+      <div class="section-label">Инфраструктура</div>
+      <h2 class="section-title reveal">Учебные лаборатории</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+        <div class="card card--hov reveal" style="padding:24px;">
+          <div style="font-size:28px;margin-bottom:14px;">🔬</div>
+          <div style="font-weight:700;margin-bottom:6px;">Лаб. измерительных систем</div>
+          <div style="font-size:13px;color:var(--c-text2);">Прецизионное оборудование для метрологических исследований</div>
+          <div style="margin-top:12px;"><span class="badge badge--ok" style="font-size:11px;">Ауд. 3-101</span></div>
+        </div>
+        <div class="card card--hov reveal rd1" style="padding:24px;">
+          <div style="font-size:28px;margin-bottom:14px;">🤖</div>
+          <div style="font-weight:700;margin-bottom:6px;">Лаб. систем управления БПЛА</div>
+          <div style="font-size:13px;color:var(--c-text2);">Стенды для отработки автопилотов и навигационных систем</div>
+          <div style="margin-top:12px;"><span class="badge badge--ok" style="font-size:11px;">Ауд. 3-254</span></div>
+        </div>
+        <div class="card card--hov reveal rd2" style="padding:24px;">
+          <div style="font-size:28px;margin-bottom:14px;">💻</div>
+          <div style="font-weight:700;margin-bottom:6px;">Компьютерный класс</div>
+          <div style="font-size:13px;color:var(--c-text2);">Моделирование в MATLAB/Simulink, проектирование систем</div>
+          <div style="margin-top:12px;"><span class="badge badge--ok" style="font-size:11px;">Ауд. 3-314</span></div>
+        </div>
+      </div>
+
+      <!-- Контакты -->
+      <hr class="divider" style="margin-bottom:48px;">
+      <div class="section-label">Контакты</div>
+      <h2 class="section-title reveal">Свяжитесь с кафедрой</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+        <div class="card card--sub card--sm reveal">
+          <div style="font-size:24px;margin-bottom:12px;">📍</div>
+          <div style="font-weight:700;margin-bottom:6px;">Адрес</div>
+          <div style="font-size:13px;color:var(--c-text2);">{Москва, Волоколамское ш., 4, корпус {X}, ауд. {XXX}}</div>
+        </div>
+        <div class="card card--sub card--sm reveal rd1">
+          <div style="font-size:24px;margin-bottom:12px;">📞</div>
+          <div style="font-weight:700;margin-bottom:6px;">Телефон</div>
+          <div style="font-size:13px;color:var(--c-text2);">{+7 (499) XXX-XX-XX}</div>
+          <div style="font-size:12px;color:var(--c-text3);margin-top:4px;">{Пн–Пт, 9:00–17:00}</div>
+        </div>
+        <div class="card card--sub card--sm reveal rd2">
+          <div style="font-size:24px;margin-bottom:12px;">✉️</div>
+          <div style="font-weight:700;margin-bottom:6px;">Email</div>
+          <div style="font-size:13px;color:var(--c-text2);">{kafedra305@mai.ru}</div>
+        </div>
+        <div class="card card--sub card--sm reveal">
+          <div style="font-size:24px;margin-bottom:12px;">👤</div>
+          <div style="font-weight:700;margin-bottom:6px;">Заведующий кафедрой</div>
+          <div style="font-size:13px;color:var(--c-text2);">Алёшин Борис Сергеевич</div>
+          <div style="font-size:12px;color:var(--c-text3);margin-top:4px;">Д.т.н., акад. РАН</div>
+        </div>
+        <div class="card card--sub card--sm reveal rd1">
+          <div style="font-size:24px;margin-bottom:12px;">🌐</div>
+          <div style="font-weight:700;margin-bottom:6px;">Сайт</div>
+          <div style="font-size:13px;color:var(--c-accent);">institutes.mai.ru/control/305/</div>
+        </div>
+        <div class="card card--sub card--sm reveal rd2">
+          <div style="font-size:24px;margin-bottom:12px;">🏛️</div>
+          <div style="font-weight:700;margin-bottom:6px;">Приёмная комиссия</div>
+          <div style="font-size:13px;color:var(--c-text2);">{+7 (499) XXX-XX-XX}</div>
+          <div style="font-size:12px;color:var(--c-accent);margin-top:4px;">priem.mai.ru</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- end page-dept -->
+<div class="page" id="page-programs">
+  <div style="padding:80px 0 60px;background:linear-gradient(135deg,white 0%,var(--c-al) 100%);border-bottom:1.5px solid var(--c-border);">
+    <div class="inner">
+      <div class="section-label">Базовое высшее образование</div>
+      <h1 style="font-size:2.8rem;font-weight:800;letter-spacing:-.04em;line-height:1.05;margin-bottom:16px;">Программа обучения <span style="color:var(--c-accent);">кафедры 305</span></h1>
+      <p style="font-size:1rem;color:var(--c-text2);max-width:560px;line-height:1.7;">Специалитет по направлению управляющих, пилотажно-навигационных комплексов летательных аппаратов.</p>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="inner" style="padding-top:56px;padding-bottom:64px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start;margin-bottom:56px;">
+        <div>
+          <div style="background:var(--c-accent);border-radius:var(--r-xl);padding:40px;color:white;margin-bottom:20px;">
+            <div style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:12px;">Специалитет · 5 лет 6 месяцев</div>
+            <div style="font-size:1.6rem;font-weight:800;line-height:1.2;margin-bottom:16px;">Управляющие, пилотажно-навигационные комплексы летательных аппаратов</div>
+            <div style="font-size:14px;color:rgba(255,255,255,.8);margin-bottom:24px;">Код: <strong>24.05.06</strong></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <span style="background:rgba(255,255,255,.2);color:white;padding:6px 14px;border-radius:var(--r-f);font-size:13px;font-weight:700;">✓ Бюджет</span>
+              <span style="background:rgba(255,255,255,.2);color:white;padding:6px 14px;border-radius:var(--r-f);font-size:13px;font-weight:700;">Очная форма</span>
+              <span style="background:rgba(255,255,255,.2);color:white;padding:6px 14px;border-radius:var(--r-f);font-size:13px;font-weight:700;">Институт №3</span>
+            </div>
+          </div>
+          <div class="card card--sub" style="padding:24px;">
+            <div style="font-weight:700;margin-bottom:12px;">Вступительные испытания (ЕГЭ)</div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--c-text2);">
+              <div style="display:flex;justify-content:space-between;"><span>Математика (профиль)</span><span class="badge badge--a">обязательно</span></div>
+              <div style="display:flex;justify-content:space-between;"><span>Физика</span><span class="badge badge--a">обязательно</span></div>
+              <div style="display:flex;justify-content:space-between;"><span>Русский язык</span><span class="badge badge--m">обязательно</span></div>
+              <div style="display:flex;justify-content:space-between;"><span>Информатика или химия</span><span class="badge badge--m">на выбор</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card card--sm reveal" style="border-left:4px solid var(--c-accent);border-radius:0 var(--r-md) var(--r-md) 0;">
+            <div style="font-weight:700;margin-bottom:6px;">О программе</div>
+            <div style="font-size:13px;color:var(--c-text2);line-height:1.7;">{Программа готовит инженеров-специалистов в области разработки и эксплуатации управляющих и пилотажно-навигационных комплексов для летательных аппаратов всех типов.}</div>
+          </div>
+          <div class="card card--sm reveal rd1" style="border-left:4px solid #7C3AED;border-radius:0 var(--r-md) var(--r-md) 0;">
+            <div style="font-weight:700;margin-bottom:6px;">Где работают выпускники</div>
+            <div style="font-size:13px;color:var(--c-text2);line-height:1.7;">{ОАК, Роскосмос, КРЭТ, НПП «Авиационная электроника», ЦИАМ, НИИ авиационных систем и другие предприятия ОПК.}</div>
+          </div>
+          <div class="card card--sm reveal rd2" style="border-left:4px solid #059669;border-radius:0 var(--r-md) var(--r-md) 0;">
+            <div style="font-weight:700;margin-bottom:6px;">Базовое предприятие</div>
+            <div style="font-size:13px;color:var(--c-text2);line-height:1.7;">{Наименование базового предприятия — партнёра кафедры 305.}</div>
+          </div>
+          <div class="card card--sm reveal rd3" style="border-left:4px solid #D97706;border-radius:0 var(--r-md) var(--r-md) 0;">
+            <div style="font-weight:700;margin-bottom:6px;">Подробнее о поступлении</div>
+            <div style="font-size:13px;"><a style="color:var(--c-accent);font-weight:600;text-decoration:none;">priem.mai.ru</a></div>
+          </div>
+        </div>
+      </div>
+      <hr class="divider" style="margin-bottom:48px;">
+      <div class="section-label">Учебный план</div>
+      <h2 class="section-title reveal">Основные дисциплины</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        <div class="card card--sub card--sm reveal"><b>1–2 курс:</b> Математика, Физика, Механика, Программирование, Теория цепей</div>
+        <div class="card card--sub card--sm reveal rd1"><b>3 курс:</b> Теория автоматического управления, Схемотехника, Бортовые ЭВМ</div>
+        <div class="card card--sub card--sm reveal rd2"><b>4 курс:</b> Авиационная электроника, Инерциальная навигация, ГЛОНАСС/GPS</div>
+        <div class="card card--sub card--sm reveal"><b>5 курс:</b> Испытания систем, Дипломное проектирование, Преддипломная практика</div>
+        <div class="card card--sub card--sm reveal rd1"><b>Спецдисциплины:</b> Пилотажно-навигационные комплексы, Системы управления ЛА, Авиационные приборы</div>
+        <div class="card card--sub card--sm reveal rd2"><b>Практика:</b> Учебная, производственная и преддипломная практики на предприятиях отрасли</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: FAQ
+     ══════════════════════════════════════ -->
+<div class="page" id="page-faq">
+  <div style="padding:80px 0 60px;background:linear-gradient(135deg,var(--c-al) 0%,white 100%);border-bottom:1.5px solid var(--c-border);">
+    <div class="inner">
+      <div class="section-label">Вопросы и ответы</div>
+      <h1 style="font-size:2.8rem;font-weight:800;letter-spacing:-.04em;line-height:1.05;">Часто задаваемые <span style="color:var(--c-accent);">вопросы (ЧаВо)</span></h1>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="inner" style="padding-top:56px;padding-bottom:64px;max-width:860px;">
+      <div id="faqList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: ПРЕПОДАВАТЕЛИ 305 ══ -->
+<div class="page" id="page-teachers305">
+  <div style="padding:64px 0 48px;background:linear-gradient(135deg,white 0%,var(--c-al) 100%);border-bottom:1.5px solid var(--c-border);">
+    <div class="inner">
+      <div class="section-label">Кафедра 305 · Институт №3</div>
+      <h1 style="font-size:2.6rem;font-weight:800;letter-spacing:-.04em;line-height:1.05;margin-bottom:12px;">Преподаватели <span style="color:var(--c-accent);">кафедры 305</span></h1>
+      <p style="font-size:1rem;color:var(--c-text2);">Нажмите на карточку преподавателя, чтобы узнать подробнее</p>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="inner" style="padding-top:48px;padding-bottom:64px;">
+      <div id="teachers305Grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .app -->
+
+<!-- MODAL -->
+<div id="modal" style="display:none;"></div>
+
+<!-- ══ СЕНСОРНАЯ КЛАВИАТУРА ══ -->
+<div class="kb-overlay" id="kbOverlay">
+  <!-- Backdrop: тап здесь закрывает клавиатуру, но НЕ трогает дропдаун -->
+  <div class="kb-backdrop" id="kbBackdrop"></div>
+  <div class="kb">
+    <!-- Ручка для изменения размера -->
+    <div class="kb-resize-handle" id="kbResizeHandle">
+      <div class="kb-resize-bar"></div>
+      <div class="kb-resize-hint">тяни чтобы изменить размер</div>
+    </div>
+    <!-- Полоса подсказок над клавиатурой -->
+    <div class="kb-suggestions" id="kbSuggestions"></div>
+    <div class="kb-display" id="kbDisplay">
+      <svg width="18" height="18" fill="none" stroke="var(--c-text3)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <div class="kb-display-text placeholder" id="kbDisplayText">Введите текст...</div>
+      <span class="kb-cursor"></span>
+    </div>
+    <div class="kb-rows">
+      <div class="kb-row" id="kbRow0"></div>
+      <div class="kb-row" id="kbRow1"></div>
+      <div class="kb-row" id="kbRow2"></div>
+      <div class="kb-row" id="kbRow3"></div>
+      <div class="kb-row" id="kbRow4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ДИАЛОГ ЭКСТРЕННОГО ВЫХОДА ══ -->
+<div class="exit-toast" id="exitToast">
+  <div class="exit-toast__title">🔐 Выход из киоска</div>
+  <div class="exit-toast__sub">Ctrl + Shift + Alt + A + E</div>
+  <div class="exit-toast__btns">
+    <button class="btn btn--p" onclick="confirmExit()">Выйти</button>
+    <button class="btn btn--g" onclick="cancelExit()" style="background:#333;color:white;border-color:#555;">Отмена</button>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   CONSTANTS
+   ══════════════════════════════════════════ */
+const API = 'http://localhost:8765/api';
+let searchType = 'group';
+let allGroups   = [];
+let allTeachers = [];
+let currentSchedule = null;
+let currentWeek = 0;
+let selectedName = '';
+let searchDebounce = null;
+
+const LESSON_TYPES = {
+  'ЛК':      'type-lk',
+  'ЛР':      'type-lr',
+  'ПЗ':      'type-pz',
+  'Экзамен': 'type-ex',
+};
+
+/* ══════════════════════════════════════════
+   CLOCK
+   ══════════════════════════════════════════ */
+const DOW_SHORT = ['ВС','ПОН','ВТ','СР','ЧТ','ПТ','СБ'];
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const d = String(now.getDate()).padStart(2,'0');
+  const mo = String(now.getMonth()+1).padStart(2,'0');
+  const y = now.getFullYear();
+  document.getElementById('clock-time').textContent = h + ':' + m;
+  document.getElementById('clock-date').textContent = `${d}.${mo}.${y}`;
+  document.getElementById('clock-dow').textContent  = DOW_SHORT[now.getDay()];
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+/* ══════════════════════════════════════════
+   NAVIGATION
+   ══════════════════════════════════════════ */
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav__tab').forEach(t => t.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  const tab = document.querySelector(`[data-page="${page}"]`);
+  if (tab) tab.classList.add('active');
+  document.getElementById('dropdown').style.display = 'none';
+  // Re-trigger reveals
+  setTimeout(() => {
+    document.querySelectorAll('.page.active .reveal').forEach(el => {
+      if (!el.classList.contains('v')) observer.observe(el);
+    });
+  }, 50);
+}
+
+/* ══════════════════════════════════════════
+   REVEAL ON SCROLL
+   ══════════════════════════════════════════ */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('v'); observer.unobserve(e.target); } });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+/* ══════════════════════════════════════════
+   LOADER BAR
+   ══════════════════════════════════════════ */
+function startLoader() {
+  const b = document.getElementById('lbar');
+  b.style.transition = 'none'; b.style.width = '0'; b.style.opacity = '1';
+  setTimeout(() => { b.style.transition = 'width 2s ease'; b.style.width = '80%'; }, 10);
+}
+function stopLoader() {
+  const b = document.getElementById('lbar');
+  b.style.transition = 'width .3s ease'; b.style.width = '100%';
+  setTimeout(() => { b.style.opacity = '0'; setTimeout(() => { b.style.width = '0'; b.style.opacity = '1'; b.style.transition = 'none'; }, 300); }, 300);
+}
+
+/* ══════════════════════════════════════════
+   TOAST
+   ══════════════════════════════════════════ */
+function toast(icon, msg) {
+  const w = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span style="font-size:18px">${icon}</span><span>${msg}</span>`;
+  w.appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+/* ══════════════════════════════════════════
+   DATE PARSER (handles {year,month,day} objects)
+   ══════════════════════════════════════════ */
+function parseDate(raw) {
+  if (!raw) return null;
+  if (typeof raw === 'object' && raw.year) return new Date(raw.year, raw.month - 1, raw.day);
+  if (typeof raw === 'string') return new Date(raw);
+  if (Array.isArray(raw)) return new Date(raw[0], raw[1]-1, raw[2]);
+  return null;
+}
+function parseDateISO(raw) {
+  const d = parseDate(raw);
+  if (!d) return '';
+  return d.toISOString().split('T')[0];
+}
+function parseTime(raw) {
+  if (!raw) return '';
+  const s = (typeof raw === 'object') ? (raw.time || '') : String(raw);
+  const parts = s.split(':');
+  if (parts.length >= 2) return `${String(parseInt(parts[0])).padStart(2,'0')}:${parts[1]}`;
+  return s;
+}
+function unwrap(raw, key) {
+  if (!raw) return '';
+  if (typeof raw === 'object') return raw[key] || '';
+  return String(raw);
+}
+
+/* ══════════════════════════════════════════
+   WEEK RANGE
+   ══════════════════════════════════════════ */
+function getWeekRange(offset) {
+  const today = new Date();
+  const dow = today.getDay() === 0 ? 6 : today.getDay() - 1;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - dow + offset * 7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { monday, sunday };
+}
+function isInWeek(dateRaw, offset) {
+  const d = parseDate(dateRaw);
+  if (!d) return false;
+  const { monday, sunday } = getWeekRange(offset);
+  return d >= new Date(monday.setHours(0,0,0,0)-1) && d <= new Date(sunday.setHours(23,59,59,999)+1);
+}
+function isCurrentLesson(timeStart, timeEnd) {
+  const now = new Date();
+  const [hs, ms] = parseTime(timeStart).split(':').map(Number);
+  const [he, me] = parseTime(timeEnd).split(':').map(Number);
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  return nowMin >= hs*60+ms && nowMin <= he*60+me;
+}
+function formatWeekLabel(offset) {
+  const { monday, sunday } = getWeekRange(offset);
+  const opts = { day: 'numeric', month: 'short' };
+  const m = monday.toLocaleDateString('ru-RU', opts);
+  const s = sunday.toLocaleDateString('ru-RU', opts);
+  if (offset === 0) return `Текущая неделя (${m} — ${s})`;
+  if (offset === 1) return `Следующая неделя (${m} — ${s})`;
+  if (offset === -1) return `Прошлая неделя (${m} — ${s})`;
+  return `${m} — ${s}`;
+}
+function formatDayLabel(dateRaw) {
+  const d = parseDate(dateRaw);
+  if (!d) return '';
+  return d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+/* ══════════════════════════════════════════
+   SEARCH TYPE
+   ══════════════════════════════════════════ */
+function setSearchType(type) {
+  searchType = type;
+  document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + type).classList.add('active');
+  const inp = document.getElementById('searchInput');
+  const placeholders = { group: 'Введите название группы...', teacher: 'Введите ФИО преподавателя...', room: 'Введите номер аудитории (напр. 3-254)...' };
+  inp.placeholder = placeholders[type];
+  inp.value = '';
+  document.getElementById('dropdown').style.display = 'none';
+  document.getElementById('schedResult').innerHTML = '';
+  selectedName = '';
+  currentSchedule = null;
+
+  if (type === 'group') {
+    if (allGroups.length === 0) loadGroups();
+    else setHint(`✓ Загружено ${allGroups.length} групп — начните вводить название`, true);
+  } else if (type === 'teacher') {
+    if (allTeachers.length === 0) loadTeachers();
+    else setHint(`✓ Загружено ${allTeachers.length} преподавателей — начните вводить ФИО`, true);
+  } else {
+    setHint('Введите номер аудитории, например: 3-254, 3-101');
+  }
+}
+
+/* ══════════════════════════════════════════
+   LOAD GROUPS & TEACHERS
+   ══════════════════════════════════════════ */
+function setHint(text, ok = false) {
+  const el = document.getElementById('searchHintText');
+  if (el) el.textContent = text;
+  const wrap = document.getElementById('searchHint');
+  if (wrap) wrap.style.color = ok ? 'var(--c-accent)' : 'var(--c-text3)';
+}
+
+async function loadGroups() {
+  setHint('Подключаемся к серверу МАИ...');
+  try {
+    const r = await fetch(`${API}/groups`);
+    const d = await r.json();
+    const list = Array.isArray(d) ? d : (d.groups || []);
+    allGroups = list.map(g => typeof g === 'string' ? { name: g } : { name: g.name || '', faculty: g.faculty || g.fac || '' });
+    allGroups = allGroups.filter(g => g.name);
+    setHint(`✓ Загружено ${allGroups.length} групп — начните вводить название`, true);
+  } catch(e) {
+    console.warn('Groups online failed, trying disk cache...', e);
+    try {
+      const r2 = await fetch(`${API}/cache-names?type=group`);
+      const items = await r2.json();
+      if (Array.isArray(items) && items.length) {
+        allGroups = items.map(i => ({ name: i.name || i, faculty: '' })).filter(g => g.name);
+        setHint(`📦 Офлайн: ${allGroups.length} групп из кэша`, false);
+        return;
+      }
+    } catch(e2) {}
+    setHint('⚠ Нет соединения. Введите название и нажмите Enter.');
+  }
+}
+async function loadTeachers() {
+  setHint('Загружаем список преподавателей...');
+  try {
+    const r = await fetch(`${API}/teachers`);
+    const d = await r.json();
+    const list = Array.isArray(d) ? d : (d.teachers || []);
+    allTeachers = list.map(t => {
+      if (typeof t === 'string') return { name: t, uid: '' };
+      const name = typeof t.name === 'object' ? (t.name.name || '') : (t.name || '');
+      const uid  = typeof t.uid  === 'object' ? (t.uid.uid   || '') : (t.uid  || '');
+      return { name, uid };
+    }).filter(t => t.name);
+    setHint(`✓ Загружено ${allTeachers.length} преподавателей — начните вводить ФИО`, true);
+  } catch(e) {
+    console.warn('Teachers online failed, trying disk cache...', e);
+    try {
+      const r2 = await fetch(`${API}/cache-names?type=teacher`);
+      const items = await r2.json();
+      if (Array.isArray(items) && items.length) {
+        allTeachers = items.map(i => ({ name: i.name || i, uid: '' })).filter(t => t.name);
+        setHint(`📦 Офлайн: ${allTeachers.length} преподавателей из кэша`, false);
+        return;
+      }
+    } catch(e2) {}
+    allTeachers = TEACHERS_305.map(t => ({ name: t.name, uid: '' }));
+    setHint(`📦 Офлайн: ${allTeachers.length} преподавателей кафедры 305`, false);
+  }
+}
+
+/* ══════════════════════════════════════════
+   SEARCH INPUT
+   ══════════════════════════════════════════ */
+function onSearchInput() {
+  clearTimeout(searchDebounce);
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  if (!q || q.length < 1) { document.getElementById('dropdown').style.display = 'none'; return; }
+  searchDebounce = setTimeout(() => showDropdown(q), 150);
+}
+function onSearchKey(e) {
+  if (e.key === 'Enter') {
+    const first = document.querySelector('.dropdown-item');
+    if (first) {
+      first.click();
+    } else {
+      // Нет дропдауна — ищем напрямую по введённому тексту
+      const val = document.getElementById('searchInput').value.trim();
+      if (val.length >= 2) selectItem(val);
+    }
+  }
+  if (e.key === 'Escape') document.getElementById('dropdown').style.display = 'none';
+}
+
+function showDropdown(q) {
+  const rawQ = document.getElementById('searchInput').value.trim();
+  let items = [];
+  if (searchType === 'group') {
+    items = allGroups.filter(g => g.name.toLowerCase().includes(q)).slice(0, 12)
+      .map(g => ({ label: g.name, sub: g.faculty || '', value: g.name }));
+  } else if (searchType === 'teacher') {
+    items = allTeachers.filter(t => t.name.toLowerCase().includes(q)).slice(0, 12)
+      .map(t => ({ label: t.name, sub: t.uid ? 'ID: ' + t.uid.substring(0,8) + '...' : '', value: t.name }));
+  }
+
+  // Если список пустой (не загрузился или нет совпадений) — всегда показываем прямой поиск
+  if (!items.length && rawQ.length >= 2) {
+    items = [{ label: rawQ, sub: '🔍 Искать «' + rawQ + '» напрямую (нажмите Enter)', value: rawQ }];
+  }
+
+  if (!items.length) { document.getElementById('dropdown').style.display = 'none'; return; }
+
+  const dd = document.getElementById('dropdown');
+  dd.innerHTML = items.map(it => `
+    <div class="dropdown-item" onclick="selectItem('${it.value.replace(/'/g,"\\'")}')">
+      <div>
+        <div class="di-name">${it.label}</div>
+        ${it.sub ? `<div class="di-sub">${it.sub}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+  dd.style.display = 'block';
+}
+
+function selectItem(name) {
+  selectedName = name;
+  document.getElementById('searchInput').value = name;
+  document.getElementById('dropdown').style.display = 'none';
+  currentWeek = 0;
+  fetchSchedule(name);
+}
+
+/* ══════════════════════════════════════════
+   FETCH & RENDER SCHEDULE
+   ══════════════════════════════════════════ */
+
+function renderSchedule(fromCache = false) {
+  if (!currentSchedule) return;
+  const container = document.getElementById('schedResult');
+  const allDays = currentSchedule.days || [];
+  const filteredDays = allDays.filter(d => isInWeek(d.date, currentWeek));
+  const schedName = currentSchedule.name || selectedName;
+
+  // Обновляем статус-бар
+  if (fromCache) {
+    const sub = _cacheLastUpdate ? `Кэш от ${_cacheLastUpdate}` : 'Данные из кэша';
+    setNetStatusBar('cache', sub);
+  }
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;">${schedName}</div>
+          ${fromCache ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:#FFF0F0;color:#C0392B;border-radius:var(--r-f);font-size:12px;font-weight:700;">📦 Из кэша</span>` : `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:#E6F7EE;color:#1A7A45;border-radius:var(--r-f);font-size:12px;font-weight:700;"><span style="width:6px;height:6px;border-radius:50%;background:#1A7A45;display:inline-block;"></span> Онлайн</span>`}
+        </div>
+        <div style="font-size:14px;color:var(--c-text2);margin-top:4px;">${formatWeekLabel(currentWeek)}</div>
+      </div>
+      <div class="week-nav">
+        ${fromCache && !_useCache ? `<button class="btn btn--o btn--sm" onclick="fetchSchedule('${schedName.replace(/'/g,"\\'")}')">🔄 Обновить</button>` : ''}
+        <button class="btn btn--g btn--sm" onclick="changeWeek(-1)">← Пред.</button>
+        <button class="btn btn--g btn--sm" onclick="changeWeek(0)" style="${currentWeek===0?'background:var(--c-al);color:var(--c-accent);border-color:var(--c-bacc);':''}">Сегодня</button>
+        <button class="btn btn--g btn--sm" onclick="changeWeek(1)">След. →</button>
+      </div>
+    </div>`;
+
+  if (filteredDays.length === 0) {
+    html += `<div class="empty-wrap"><div class="empty-icon">📭</div><div style="font-size:18px;font-weight:700;">На этой неделе пар нет</div><div style="color:var(--c-text2);">Попробуйте другую неделю</div></div>`;
+    container.innerHTML = html;
+    return;
+  }
+
+  html += '<div class="day-grid">';
+  filteredDays.forEach(day => {
+    const dayDate = parseDate(day.date);
+    const isToday = dayDate && dayDate.toDateString() === new Date().toDateString();
+
+    // Сортируем пары по времени начала (API иногда отдаёт не по порядку)
+    const lessons = [...(day.lessons || [])].sort((a, b) => {
+      const ta = parseTime(a.time_start).replace(':','') || '0000';
+      const tb = parseTime(b.time_start).replace(':','') || '0000';
+      return parseInt(ta) - parseInt(tb);
+    });
+
+    html += `
+      <div class="day-block" style="${isToday ? 'border-color:var(--c-bacc);' : ''}">
+        <div class="day-head" style="${isToday ? 'background:var(--c-al);' : ''}">
+          <div>
+            <div class="day-name">${formatDayLabel(day.date)}</div>
+          </div>
+          ${isToday ? '<span class="badge badge--s"><span class="dot"></span> Сегодня</span>' : ''}
+          <span class="badge badge--m" style="margin-left:auto;">${lessons.length} ${lessons.length===1?'пара':lessons.length<5?'пары':'пар'}</span>
+        </div>
+        <div class="lessons-list">`;
+
+    lessons.forEach(l => {
+      const ts = parseTime(l.time_start);
+      const te = parseTime(l.time_end);
+      const isCurrent = isToday && isCurrentLesson(l.time_start, l.time_end);
+      const teachers = (l.lectors || []).map(lec => unwrap(lec.name, 'name')).filter(Boolean);
+      const rooms    = (l.rooms   || []).map(r => typeof r === 'object' ? (r.name || '') : r).filter(Boolean);
+      const ltype    = l.type || '';
+      const typeCls  = LESSON_TYPES[ltype] || 'type-other';
+
+      html += `
+        <div class="lesson ${isCurrent ? 'current' : ''}">
+          <div class="lesson__time">
+            <div class="lesson__time-s">${ts}</div>
+            <div class="lesson__time-e">${te}</div>
+          </div>
+          <div class="lesson__body">
+            <div class="lesson__name">${l.name || '—'}</div>
+            <div class="lesson__meta">
+              ${teachers.map(t => `<div class="lesson__teacher">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                ${t}
+              </div>`).join('')}
+              ${rooms.map(r => `<div class="lesson__room">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                ${r}
+              </div>`).join('')}
+              ${ltype ? `<span class="lesson__type ${typeCls}">${ltype}</span>` : ''}
+              ${isCurrent ? '<span class="badge badge--live"><span class="dot"></span> Идёт сейчас</span>' : ''}
+            </div>
+          </div>
+        </div>`;
+    });
+
+    html += '</div></div>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function changeWeek(to) {
+  if (to === 0) currentWeek = 0;
+  else currentWeek += to;
+  renderSchedule(_useCache);
+}
+
+/* ══════════════════════════════════════════
+   MODAL (programs detail)
+   ══════════════════════════════════════════ */
+const PROG_DETAILS = {
+  bak1:  { title: 'Приборостроение', code: '12.03.01', years: '4 года', seats: '25 бюджет', desc: 'Программа готовит инженеров-приборостроителей широкого профиля. Студенты изучают конструирование приборов, схемотехнику, программирование микроконтроллеров, системы автоматического управления. Дипломные проекты выполняются по заказу предприятий ОПК.', disciplines: ['Теория автоматического управления', 'Микропроцессорные системы', 'Конструирование авиаприборов', 'Схемотехника', 'Метрология и стандартизация', 'CAD/CAM системы'] },
+  bak2:  { title: 'Инфокоммуникационные технологии', code: '11.03.02', years: '4 года', seats: '20 бюджет', desc: 'Подготовка специалистов по цифровым системам связи, обработке информации и телекоммуникациям для авиационных применений. Глубокая математическая подготовка в области теории сигналов.', disciplines: ['Теория сигналов', 'Цифровая обработка сигналов', 'Сети передачи данных', 'Кодирование информации', 'FPGA-проектирование', 'Авиационные протоколы связи'] },
+  bak3:  { title: 'Мехатроника и робототехника', code: '15.03.06', years: '4 года', seats: '15 контракт', desc: 'Программа на стыке механики, электроники и программирования. Студенты создают роботизированные системы, манипуляторы и автоматизированные производственные комплексы.', disciplines: ['Теория механизмов', 'Приводные системы', 'Сенсорика', 'Промышленные роботы', 'ROS/ROS2', 'Компьютерное зрение'] },
+  spec1: { title: 'Авиационные приборы и ИВК', code: '24.05.06', years: '5.5 лет', seats: '30 бюджет', desc: 'Флагманская программа кафедры. Всестороннее изучение бортовых измерительно-вычислительных комплексов: от физических основ измерений до разработки встроенного ПО и сертификации систем.', disciplines: ['Авиационная электроника', 'Бортовые ЭВМ', 'DO-178C стандарт', 'FPGA для авиации', 'Испытания и сертификация', 'Авионика нового поколения'] },
+  spec2: { title: 'Системы управления ЛА', code: '24.05.01', years: '5.5 лет', seats: '25 бюджет', desc: 'Подготовка разработчиков систем автоматического управления летательными аппаратами. Тесное сотрудничество с ОКБ и НИИ авиационной промышленности.', disciplines: ['Аэродинамика', 'Автопилоты', 'Инерциальная навигация', 'ГЛОНАСС/GPS интеграция', 'Системы управления ракетами', 'Моделирование в Simulink'] },
+  spec3: { title: 'Беспилотные авиационные системы', code: '25.05.05', years: '5 лет', seats: '20 бюджет', desc: '🔥 Новая программа, открытая в 2022 году. Полный цикл разработки БПЛА: аэродинамика, ЭС, ПО автопилота, системы связи и управления роем БПЛА.', disciplines: ['Аэродинамика БПЛА', 'Автопилоты для БПЛА', 'Компьютерное зрение', 'Управление роем', 'Связь и РЭБ', 'Сертификация БПЛА'] },
+  mag1:  { title: 'Цифровые измерительные системы', code: '12.04.01', years: '2 года', seats: '10 бюджет', desc: 'Магистерская программа для углублённой подготовки в области современных методов цифровых измерений: от IoT-сенсоров до систем обработки больших данных в реальном времени.', disciplines: ['Статистическая теория измерений', 'IoT-архитектуры', 'Edge Computing', 'Машинное обучение в метрологии', 'Распределённые измерительные сети', 'Цифровые двойники'] },
+  mag2:  { title: 'Интеллектуальные системы управления', code: '15.04.06', years: '2 года', seats: '8 контракт', desc: 'Применение методов искусственного интеллекта в системах управления ЛА. Нейросетевые автопилоты, обучение с подкреплением для управления, отказоустойчивые ИИ-системы.', disciplines: ['Глубокое обучение', 'Обучение с подкреплением', 'Нейросетевые регуляторы', 'Робастное управление', 'Верификация ИИ-систем', 'Sim-to-Real перенос'] },
+  mag3:  { title: 'Аэрокосмические информационные системы', code: '24.04.01', years: '2 года', seats: '12 бюджет', desc: 'Глобальные навигационные и информационные системы. Обработка спутниковых данных, дистанционное зондирование Земли, космические информационные комплексы.', disciplines: ['ГНСС-технологии', 'ДЗЗ и обработка снимков', 'Спутниковая связь', 'Орбитальная механика', 'ГИС-системы', 'Антенные системы'] },
+};
+
+function openModal(id) {
+  const p = PROG_DETAILS[id];
+  if (!p) return;
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `
+    <div class="modal-bg" onclick="closeModal(event)">
+      <div class="modal" style="position:relative;" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c-accent);margin-bottom:12px;">Программа обучения</div>
+        <h2 style="font-size:1.8rem;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:16px;">${p.title}</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
+          <span class="badge badge--a">${p.code}</span>
+          <span class="badge badge--m">⏱ ${p.years}</span>
+          <span class="badge badge--ok">👥 ${p.seats}</span>
+        </div>
+        <p style="color:var(--c-text2);line-height:1.75;margin-bottom:28px;">${p.desc}</p>
+        <div style="font-weight:700;margin-bottom:14px;font-size:15px;">Основные дисциплины</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${p.disciplines.map(d => `<span class="badge badge--m" style="font-size:13px;font-weight:500;">${d}</span>`).join('')}
+        </div>
+        <div style="margin-top:32px;display:flex;gap:12px;">
+          <button class="btn btn--p" onclick="closeModal();navigate('schedule');toast('📅','Ищите группу: '+searchType);setTimeout(()=>setSearchType('group'),100)">Найти расписание</button>
+          <button class="btn btn--g" onclick="closeModal()">Закрыть</button>
+        </div>
+      </div>
+    </div>`;
+  modal.style.display = 'block';
+}
+function closeModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('modal').style.display = 'none';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ══════════════════════════════════════════
+   ЧаВо
+   ══════════════════════════════════════════ */
+const FAQS = [
+  { q: 'Как найти расписание своей группы?', a: 'Нажмите на вкладку «Расписание», выберите режим «Группа» и наберите номер группы на сенсорной клавиатуре. По мере ввода появятся подсказки — нажмите нужную или кнопку «Найти».' },
+  { q: 'Как посмотреть расписание преподавателя?', a: 'На вкладке «Расписание» переключитесь в режим «Преподаватель» и наберите ФИО. Расписание загрузится автоматически.' },
+  { q: 'Можно ли переключаться между неделями?', a: 'Да. После загрузки расписания используйте кнопки «← Пред.», «Сегодня» и «След. →» над списком пар.' },
+  { q: 'Что означает выделение «Идёт сейчас»?', a: 'Синяя рамка и метка «Идёт сейчас» означают, что пара проходит прямо в этот момент. Определяется автоматически по текущему времени.' },
+  { q: 'Где найти информацию о преподавателях кафедры?', a: 'На вкладке «Преподаватели» — полный список кафедры 305 с должностями и учёными степенями. Нажмите на карточку преподавателя для подробной информации.' },
+  { q: 'Какая программа обучения есть на кафедре 305?', a: 'Специалитет 24.05.06 «Управляющие, пилотажно-навигационные комплексы летательных аппаратов» — очная форма, 5.5 лет. Подробнее — на вкладке «Программы обучения».' },
+  { q: 'Как связаться с кафедрой?', a: 'Контакты кафедры 305 — адрес, телефон и e-mail — указаны внизу вкладки «О кафедре».' },
+  { q: 'Расписание не загружается — что делать?', a: 'Убедитесь, что стенд подключён к сети. Данные загружаются с сервера МАИ. Если сеть недоступна, стенд покажет последнее сохранённое расписание.' },
+];
+
+
+/* ══════════════════════════════════════════
+   ПРЕПОДАВАТЕЛИ КАФЕДРЫ 305
+   ══════════════════════════════════════════ */
+const TEACHERS_305 = [
+  { name: 'Алешин Борис Сергеевич',         role: 'зав. кафедрой',    degree: 'Доктор технических наук', title: 'Старший научный сотрудник, акад. РАН', guid: 'b0062582-1d99-11e0-9baf-1c6f65450efa' },
+  { name: 'Афонин Александр Анатольевич',   role: 'доцент',           degree: 'Кандидат технических наук', title: 'Доцент', guid: 'b0062590-1d99-11e0-9baf-1c6f65450efa' },
+  { name: 'Веремеенко Константин Константинович', role: 'доцент',     degree: 'Кандидат технических наук', title: 'Доцент', guid: '8062e196-1d99-11e0-9baf-1c6f65450efa' },
+  { name: 'Кошелев Борис Валентинович',     role: 'доцент',           degree: 'Кандидат технических наук', title: 'Доцент', guid: '578c17f8-1d99-11e0-9baf-1c6f65450efa' },
+  { name: 'Антонов Дмитрий Александрович',  role: 'доцент',           degree: 'Кандидат технических наук', title: '', guid: 'eb7d5e30-1d99-11e0-9baf-1c6f65450efa' },
+  { name: 'Нгуен Ныы Ман',                  role: 'доцент',           degree: 'Кандидат технических наук', title: '', guid: '05816da9-3656-11e3-9343-3cd92bf20bfe' },
+  { name: 'Сурков Дмитрий Александрович',   role: 'доцент',           degree: 'Кандидат технических наук', title: '', guid: 'e4a9bc9c-1d99-11e0-9baf-1c6f65450efa' },
+  { name: 'Жарков Максим Витальевич',       role: 'ст. преподаватель', degree: '', title: '', guid: 'f253618c-1d99-11e0-9baf-1c6f65450efa' },
+  { name: 'Кузнецов Иван Михайлович',       role: 'ст. преподаватель', degree: '', title: '', guid: '28e11301-1d9b-11e0-9baf-1c6f65450efa' },
+  { name: 'Лельков Константин Сергеевич',   role: 'ст. преподаватель', degree: '', title: '', guid: '95d76d89-77f8-11e1-86e1-00304866c649' },
+  { name: 'Мишин Юрий Николаевич',          role: 'ст. преподаватель', degree: '', title: '', guid: '1847ff04-03c3-11e2-9a50-3cd92bf20bff' },
+  { name: 'Петрухин Владимир Андреевич',    role: 'ст. преподаватель', degree: '', title: '', guid: '2f38b9d1-1d9b-11e0-9baf-1c6f65450efa' },
+  { name: 'Пронькин Андрей Николаевич',     role: 'ст. преподаватель', degree: '', title: '', guid: 'd6097880-1d9a-11e0-9baf-1c6f65450efa' },
+  { name: 'Рябинкин Максим Сергеевич',      role: 'ст. преподаватель', degree: '', title: '', guid: 'ae2912f4-a1e8-11e7-b412-485b3919ee6d' },
+  { name: 'Савкин Алексей Владимирович',    role: 'ст. преподаватель', degree: '', title: '', guid: '2aee59b5-f63c-11e9-9246-485b3919ee6d' },
+  { name: 'Ушаков Андрей Николаевич',       role: 'ст. преподаватель', degree: '', title: '', guid: '90d920a5-1d9a-11e0-9baf-1c6f65450efa' },
+  { name: 'Хорев Тимофей Сергеевич',        role: 'ст. преподаватель', degree: '', title: '', guid: '2f38b9ce-1d9b-11e0-9baf-1c6f65450efa' },
+  { name: 'Колганов Леонид Александрович',  role: 'ассистент',        degree: 'Кандидат технических наук', title: '', guid: '0e0fb874-4055-11e7-b024-3cd92bf20bfe' },
+  { name: 'Калинина Ольга Игоревна',        role: 'ассистент',        degree: '', title: '', guid: 'd4a78fa7-5606-11ed-bbea-ac1f6b64c5eb' },
+  { name: 'Матюшенко Роман Викторович',     role: 'ассистент',        degree: '', title: '', guid: '0ad2ae84-0f4d-11ee-bc01-3cecef1c132f' },
+  { name: 'Рычков Александр Сергеевич',     role: 'ассистент',        degree: '', title: '', guid: '1b1b73fa-2e23-11ef-bc19-3cecef1c132f' },
+  { name: 'Учаева Екатерина Александровна', role: 'ассистент',        degree: '', title: '', guid: '5ab9e990-9147-11ef-bc24-3cecef1c132f' },
+];
+// Имена для фильтра подсказок при поиске
+const TEACHERS_305_NAMES = TEACHERS_305.map(t => t.name.toLowerCase());
+
+function getInitials(name) {
+  const p = name.trim().split(' ');
+  if (p.length >= 2) return p[0][0] + (p[1][0] || '');
+  return name.substring(0,2);
+}
+const AVATAR_COLORS = ['#E7EDFF','#FFF0F9','#F0FFF4','#FFFBEB','#F3E8FF','#FFF0F0','#F0F9FF'];
+const AVATAR_TEXT   = ['#0271FF','#C026D3','#16A34A','#D97706','#7C3AED','#DC2626','#0284C7'];
+
+function buildTeachers305() {
+  const grid = document.getElementById('teachers305Grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  TEACHERS_305.forEach((t, i) => {
+    const ci = i % AVATAR_COLORS.length;
+    const initials = getInitials(t.name);
+    const roleLabel = { 'зав. кафедрой':'👑 Зав. кафедрой', 'доцент':'Доцент', 'ст. преподаватель':'Ст. преподаватель', 'ассистент':'Ассистент' }[t.role] || t.role;
+    const card = document.createElement('div');
+    card.className = 'person-card';
+    card.style.cursor = 'pointer';
+    card.innerHTML = `
+      <div class="avatar" style="background:${AVATAR_COLORS[ci]};color:${AVATAR_TEXT[ci]};font-size:15px;">${initials}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:15px;line-height:1.3;">${t.name}</div>
+        <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">${roleLabel}${t.degree ? ' · ' + t.degree : ''}</div>
+        ${t.title ? `<div style="font-size:11px;color:var(--c-text3);margin-top:2px;">${t.title}</div>` : ''}
+      </div>
+      <svg width="16" height="16" fill="none" stroke="var(--c-text3)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>`;
+    card.addEventListener('click', () => openTeacherModal(t));
+    grid.appendChild(card);
+  });
+}
+
+/* ── Публикации преподавателей (загружаются с сервера МАИ) ── */
+
+async function loadTeacherPubs(guid, containerEl) {
+  containerEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:16px 0;color:var(--c-text2);font-size:14px;">
+      <div class="spinner" style="width:20px;height:20px;border-width:2px;"></div>
+      Загружаем публикации...
+    </div>`;
+  try {
+    const r = await fetch(`${API}/teacher-pubs/${guid}`);
+    const d = await r.json();
+    const pubs = d.pubs || [];
+    if (!pubs.length) {
+      containerEl.innerHTML = `<div style="color:var(--c-text3);font-size:13px;padding:12px 0;">Публикации не найдены</div>`;
+      return;
+    }
+    containerEl.innerHTML = `
+      <div style="font-size:12px;color:var(--c-text3);margin-bottom:12px;">
+        Всего публикаций: <b>${pubs.length}</b> · отсортированы по году (новые вверху)
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;padding-right:4px;">
+        ${pubs.map(p => `
+          <div style="background:var(--c-bg2);border-radius:var(--r-md);padding:12px 14px;${p.lang==='en'?'border-left:3px solid #0271FF;':'border-left:3px solid #059669;'}">
+            <div style="font-size:13px;font-weight:600;line-height:1.4;margin-bottom:5px;">${p.title}</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              ${p.year ? `<span style="background:${p.lang==='en'?'var(--c-al)':'#E6F7EE'};color:${p.lang==='en'?'var(--c-accent)':'#1A7A45'};padding:2px 8px;border-radius:var(--r-f);font-size:11px;font-weight:700;">${p.year}</span>` : ''}
+              <span style="font-size:11px;padding:2px 7px;border-radius:var(--r-f);background:${p.lang==='en'?'#E8F4FF':'#F0FFF4'};color:${p.lang==='en'?'#0047A8':'#166534'};font-weight:700;">${p.lang === 'en' ? 'EN' : 'RU'}</span>
+              ${p.journal ? `<span style="font-size:11px;color:var(--c-text3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.journal}</span>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>`;
+  } catch(e) {
+    containerEl.innerHTML = `<div style="color:var(--c-text3);font-size:13px;padding:12px 0;">Ошибка загрузки: ${e.message}</div>`;
+  }
+}
+
+function openTeacherModal(t) {
+  const modal = document.getElementById('modal');
+  const pubContainerId = 'teacherPubsContainer';
+  modal.innerHTML = `
+    <div class="modal-bg" onclick="closeModal(event)">
+      <div class="modal" style="position:relative;max-width:680px;max-height:90vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+
+        <!-- Шапка -->
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-shrink:0;">
+          <div class="avatar" style="width:60px;height:60px;font-size:19px;font-weight:800;background:var(--c-al);color:var(--c-accent);flex-shrink:0;">${getInitials(t.name)}</div>
+          <div>
+            <div style="font-size:1.25rem;font-weight:800;letter-spacing:-.02em;line-height:1.2;">${t.name}</div>
+            <div style="font-size:13px;color:var(--c-text2);margin-top:4px;">${t.role}${t.degree ? ' · ' + t.degree : ''}${t.title ? ' · ' + t.title : ''}</div>
+            <div style="font-size:11px;color:var(--c-text3);margin-top:2px;">Кафедра 305 МАИ</div>
+          </div>
+        </div>
+
+        <!-- Раздел публикаций -->
+        <div style="flex-shrink:0;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--c-text3);margin-bottom:10px;">
+            📄 Публикации
+            <span style="margin-left:8px;font-size:10px;">🔵 английские · 🟢 русские</span>
+          </div>
+        </div>
+        <div id="${pubContainerId}" style="flex:1;overflow-y:auto;min-height:80px;"></div>
+
+        <!-- Действия -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px;flex-shrink:0;padding-top:16px;border-top:1.5px solid var(--c-border);">
+          <button class="btn btn--p" onclick="closeModal();setSearchType('teacher');setTimeout(()=>selectItem('${t.name.replace(/'/g,"\\'")}'),80);navigate('schedule');">
+            📅 Расписание
+          </button>
+          <button class="btn btn--g" onclick="closeModal()">Закрыть</button>
+        </div>
+      </div>
+    </div>`;
+  modal.style.display = 'block';
+
+  // Загружаем публикации асинхронно
+  const container = document.getElementById(pubContainerId);
+  if (t.guid) {
+    loadTeacherPubs(t.guid, container);
+  } else {
+    container.innerHTML = `<div style="color:var(--c-text3);font-size:13px;padding:12px 0;">Профиль преподавателя не найден</div>`;
+  }
+}
+
+
+/* ══════════════════════════════════════════
+   ОФЛАЙН-КЭШ РАСПИСАНИЯ (IndexedDB)
+   ══════════════════════════════════════════ */
+const CACHE_DB  = 'mai_schedule_cache';
+const CACHE_VER = 1;
+let cacheDB = null;
+
+function openCacheDB() {
+  return new Promise((res, rej) => {
+    if (cacheDB) return res(cacheDB);
+    const req = indexedDB.open(CACHE_DB, CACHE_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('schedules'))
+        db.createObjectStore('schedules', { keyPath: 'name' });
+      if (!db.objectStoreNames.contains('meta'))
+        db.createObjectStore('meta', { keyPath: 'key' });
+    };
+    req.onsuccess = e => { cacheDB = e.target.result; res(cacheDB); };
+    req.onerror = () => rej(req.error);
+  });
+}
+
+async function cacheSchedule(name, data) {
+  try {
+    const db = await openCacheDB();
+    const tx = db.transaction(['schedules','meta'], 'readwrite');
+    tx.objectStore('schedules').put({ name, data, ts: Date.now() });
+    tx.objectStore('meta').put({ key: 'last_update', ts: Date.now() });
+  } catch(e) { console.warn('Cache write failed', e); }
+}
+
+async function getCachedSchedule(name) {
+  try {
+    const db = await openCacheDB();
+    return new Promise((res) => {
+      const req = db.transaction('schedules').objectStore('schedules').get(name);
+      req.onsuccess = () => res(req.result?.data || null);
+      req.onerror   = () => res(null);
+    });
+  } catch(e) { return null; }
+}
+
+async function getLastUpdateTime() {
+  try {
+    const db = await openCacheDB();
+    return new Promise((res) => {
+      const req = db.transaction('meta').objectStore('meta').get('last_update');
+      req.onsuccess = () => res(req.result?.ts || 0);
+      req.onerror   = () => res(0);
+    });
+  } catch(e) { return 0; }
+}
+
+// Проверяем нужно ли обновить кэш (каждые 24ч в 10:00)
+async function checkCacheUpdate() {
+  const lastTs = await getLastUpdateTime();
+  const now    = new Date();
+  const lastDt = new Date(lastTs);
+  const needsUpdate = !lastTs
+    || lastDt.toDateString() !== now.toDateString()   // другой день
+    || (now.getHours() >= 10 && lastDt.getHours() < 10); // перешли через 10:00
+  if (needsUpdate) {
+    console.log('[Cache] Плановое обновление кэша...');
+    // Предзагружаем расписания преподавателей кафедры 305
+    for (const t of TEACHERS_305.slice(0, 5)) { // первые 5 чтобы не перегружать
+      try {
+        const r = await fetch(`${API}/schedule/${encodeURIComponent(t.name)}`);
+        if (r.ok) { const d = await r.json(); await cacheSchedule(t.name, d); }
+      } catch(e) {}
+    }
+    toast('💾', 'Расписание сохранено для офлайн-режима');
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   СЕТЕВОЙ МОНИТОР + СТАТУС-БАР + КЭШ-FALLBACK
+   ══════════════════════════════════════════════════════ */
+
+let _netOnline      = true;   // текущее состояние (считаем онлайн до первой проверки)
+let _netOfflineSince = null;  // когда ушли в офлайн
+let _netBackSince    = null;  // когда вернулся онлайн
+let _useCache        = false; // флаг: работаем из кэша
+let _cacheLastUpdate = null;  // дата последнего обновления кэша (из last_update.json)
+const NET_OFFLINE_THRESHOLD = 5000;  // 5 сек офлайн → переключаемся на кэш
+const NET_BACK_GRACE        = 10000; // 10 сек после возврата → переходим обратно в онлайн
+
+// Стили статус-бара
+const NET_STYLES = {
+  online:       { bg:'#E6F7EE', color:'#1A7A45', icon:'🟢', dot:'#1A7A45',  title:'Онлайн',         sub:'' },
+  cache_soon:   { bg:'#FFF4E0', color:'#8A5800', icon:'⚡', dot:'#F59E0B',  title:'Нет связи',      sub:'Переключаемся на кэш...' },
+  cache:        { bg:'#FFF0F0', color:'#C0392B', icon:'📦', dot:'#C0392B',  title:'Офлайн-режим',   sub:'Данные из кэша' },
+  cache_back:   { bg:'#E8EEFF', color:'#0271FF', icon:'🔄', dot:'#0271FF',  title:'Сеть вернулась', sub:'Переход на онлайн через 10 сек...' },
+};
+
+function setNetStatusBar(mode, extraSub) {
+  const bar  = document.getElementById('netStatusBar');
+  const s    = NET_STYLES[mode];
+  if (!bar || !s) return;
+  const sub = extraSub || s.sub;
+  bar.style.background = s.bg;
+  bar.style.color      = s.color;
+  bar.style.display    = 'flex';
+  document.getElementById('netStatusIcon').textContent  = s.icon;
+  document.getElementById('netStatusTitle').textContent = s.title;
+  document.getElementById('netStatusSub').textContent   = sub;
+  document.getElementById('netStatusDot').style.background = s.dot;
+  document.getElementById('netStatusDot').style.boxShadow  = `0 0 6px ${s.dot}`;
+  // Скрываем статус-бар «online» через 4 сек
+  if (mode === 'online') {
+    setTimeout(() => { bar.style.display = 'none'; }, 4000);
+  }
+}
+
+async function checkNetwork() {
+  try {
+    const r = await fetch(`${API}/health`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+    return r.ok;
+  } catch { return false; }
+}
+
+// Монитор запускается каждые 5 секунд
+async function networkMonitorTick() {
+  const alive = await checkNetwork();
+
+  if (alive) {
+    // Сеть есть
+    if (!_netOnline) {
+      // Только что вернулась
+      _netOnline      = true;
+      _netBackSince   = Date.now();
+      _netOfflineSince = null;
+      setNetStatusBar('cache_back');
+      // Через 10 сек переходим обратно в онлайн
+      setTimeout(() => {
+        _useCache = false;
+        setNetStatusBar('online', 'Работаем онлайн');
+        // Если есть активный поиск — обновляем данные
+        if (selectedName) fetchSchedule(selectedName);
+      }, NET_BACK_GRACE);
+    }
+  } else {
+    // Сети нет
+    if (_netOnline) {
+      // Только что пропала
+      _netOnline       = true;  // будем ждать порог
+      _netOfflineSince = _netOfflineSince || Date.now();
+      const offlineMs  = Date.now() - _netOfflineSince;
+      if (offlineMs >= NET_OFFLINE_THRESHOLD) {
+        _netOnline = false;
+        _useCache  = true;
+        const sub  = _cacheLastUpdate
+          ? `Кэш от ${_cacheLastUpdate}`
+          : 'Кэш загружен';
+        setNetStatusBar('cache', sub);
+      } else {
+        setNetStatusBar('cache_soon');
+      }
+    }
+  }
+}
+
+// Загружаем дату последнего обновления кэша с сервера
+async function loadCacheLastUpdate() {
+  try {
+    const r = await fetch(`${API}/cache-status`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.updated) {
+      const dt = new Date(d.updated);
+      _cacheLastUpdate = dt.toLocaleString('ru-RU', {
+        day:'2-digit', month:'2-digit', year:'numeric',
+        hour:'2-digit', minute:'2-digit'
+      });
+      // Обновляем hint с датой
+      const groups_ok = d.groups_ok || 0, teachers_ok = d.teachers_ok || 0;
+      const hintIcon = document.getElementById('searchHint')?.querySelector('svg');
+      setHint(
+        `Кэш от ${_cacheLastUpdate} · ${groups_ok} групп, ${teachers_ok} преподавателей`,
+        true
+      );
+    }
+  } catch { /* сервер не вернул данные — не страшно */ }
+}
+
+// Запускаем монитор
+setInterval(networkMonitorTick, 5000);
+
+/* ── fetchSchedule с автоматическим fallback на кэш ── */
+async function fetchSchedule(name) {
+  const container = document.getElementById('schedResult');
+  container.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><div>${_useCache ? 'Ищем в кэше...' : 'Загружаем расписание...'}</div></div>`;
+  startLoader();
+
+  // Если уже в офлайн-режиме — сразу идём в кэш
+  if (_useCache) {
+    const cached = await getCachedSchedule(name);
+    if (cached) {
+      currentSchedule = cached;
+      stopLoader();
+      renderSchedule(true); // true = fromCache
+      return;
+    }
+    // Кэша нет — попробуем всё равно онлайн
+  }
+
+  try {
+    const encoded = encodeURIComponent(name);
+    const r = await fetch(`${API}/schedule/${encoded}`, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    currentSchedule = data;
+    await cacheSchedule(name, data);
+    stopLoader();
+    renderSchedule(false); // false = fromOnline
+  } catch(e) {
+    const cached = await getCachedSchedule(name);
+    if (cached) {
+      currentSchedule = cached;
+      stopLoader();
+      renderSchedule(true);
+      const sub = _cacheLastUpdate ? ` (кэш от ${_cacheLastUpdate})` : '';
+      toast('📦', `Офлайн-режим${sub}`);
+    } else {
+      stopLoader();
+      container.innerHTML = `
+        <div class="empty-wrap">
+          <div class="empty-icon">😕</div>
+          <div style="font-size:18px;font-weight:700;">Нет соединения и кэша</div>
+          <div style="color:var(--c-text2);font-size:14px;">${e.message}</div>
+          <button class="btn btn--p" onclick="fetchSchedule('${name.replace(/'/g,"\\'")}')">Повторить</button>
+        </div>`;
+      toast('❌', 'Ошибка: ' + e.message);
+    }
+  }
+}
+
+/* ══════════════════════════════════════════
+   ФИЛЬТР ПОДСКАЗОК: только М3О + преподы 305
+   ══════════════════════════════════════════ */
+function kbUpdateSuggestions() {
+  const strip = document.getElementById('kbSuggestions');
+  strip.innerHTML = '';
+  if (!kbValue || kbValue.length < 1) { strip.classList.remove('has-items'); return; }
+  const q = kbValue.toLowerCase();
+  let matches = [];
+  if (searchType === 'group') {
+    // Только группы М3О для подсказок
+    matches = allGroups
+      .filter(g => g.name.toLowerCase().startsWith('м3о') && g.name.toLowerCase().includes(q))
+      .slice(0, 8);
+    // Если нет совпадений в М3О — пустые подсказки (но поиск всё равно работает)
+  } else if (searchType === 'teacher') {
+    // Сначала преподаватели кафедры 305
+    const our = TEACHERS_305.filter(t => t.name.toLowerCase().includes(q)).slice(0, 6);
+    // Затем остальные из общего списка (если есть место)
+    const others = allTeachers
+      .filter(t => !TEACHERS_305_NAMES.includes(t.name.toLowerCase()) && t.name.toLowerCase().includes(q))
+      .slice(0, 8 - our.length);
+    matches = [...our.map(t => ({ name: t.name })), ...others];
+  }
+  if (!matches.length) { strip.classList.remove('has-items'); return; }
+  matches.forEach(item => {
+    const name = item.name || item;
+    const chip = document.createElement('button');
+    chip.className = 'kb-suggestion-chip';
+    chip.textContent = name;
+    chip.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      kbValue = name; kbUpdateDisplay(); kbSync(); kbClose();
+      setTimeout(() => selectItem(name), 80);
+    });
+    strip.appendChild(chip);
+  });
+  strip.classList.add('has-items');
+}
+
+/* ═══════════════════════════════════════════════
+   ГОРЯЧИЕ КЛАВИШИ — все шорткаты в одном месте
+   Чтобы отключить — поставь enabled: false
+   ═══════════════════════════════════════════════
+   1. toggleKeyboard:  Shift → Tab → Space
+   2. exitApp:         Ctrl+Shift+Alt+A+E
+   3. exitFullscreen:  Ctrl+Shift+Alt+F
+   4. closeModal:      Escape
+   ═══════════════════════════════════════════════ */
+
+let _kbIntercepting = true;
+let _debugSeq       = [];
+const _pressed      = new Set();
+
+const SHORTCUTS = [
+  // 1. Переключить сенсорную клавиатуру
+  { id:"toggleKeyboard", enabled:true, type:"sequence",
+    keys:["Shift","Tab"," "], join:"Shift,Tab, ",
+    action: () => { _kbIntercepting=!_kbIntercepting;
+      toast(_kbIntercepting?"🔒":"🔓", _kbIntercepting?"Сенсорная клавиатура включена":"Debug: системный ввод активен"); } },
+
+  // 2. Выход из приложения
+  { id:"exitApp", enabled:true, type:"combo",
+    check:(e) => e.ctrlKey&&e.shiftKey&&e.altKey&&(_pressed.has("a")||_pressed.has("A"))&&(_pressed.has("e")||_pressed.has("E")),
+    action:(e) => { e.preventDefault(); document.getElementById("exitToast").classList.add("show"); } },
+
+  // 3. Выход из полноэкранного режима
+  { id:"exitFullscreen", enabled:true, type:"combo",
+    check:(e) => e.ctrlKey&&e.shiftKey&&e.altKey&&(e.key==="f"||e.key==="F"),
+    action:() => { if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});toast("🖥️","Выход из полноэкранного режима");}else{toast("ℹ️","Уже не в полноэкранном режиме");} } },
+
+  // 4. Закрыть модал
+  { id:"closeModal", enabled:true, type:"key", key:"Escape", action:()=>closeModal() },
+];
+
+document.addEventListener("keydown", e => {
+  _pressed.add(e.key);
+  for(const sc of SHORTCUTS){
+    if(!sc.enabled) continue;
+    if(sc.type==="sequence"){
+      _debugSeq.push(e.key);
+      if(_debugSeq.length>sc.keys.length) _debugSeq.shift();
+      if(_debugSeq.join(",")===sc.join) sc.action(e);
+    } else if(sc.type==="combo"){
+      if(sc.check(e)) sc.action(e);
+    } else if(sc.type==="key"){
+      if(e.key===sc.key) sc.action(e);
+    }
+  }
+});
+document.addEventListener("keyup", e => _pressed.delete(e.key));
+
+function cancelExit(){ document.getElementById("exitToast").classList.remove("show"); }
+function confirmExit(){
+  window.close();
+  document.body.innerHTML="<div style=\"display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#0E1117;color:white;font-family:Manrope,sans-serif;gap:16px\"><div style=\"font-size:56px\">🔒</div><div style=\"font-size:26px;font-weight:800\">Киоск остановлен</div><div style=\"color:rgba(255,255,255,.4);font-size:15px\">Перезагрузите страницу для возобновления</div></div>";
+}
+
+function buildFaq() {
+  const list = document.getElementById('faqList');
+  list.innerHTML = FAQS.map((f, i) => `
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        <span>${f.q}</span>
+        <div class="faq-chev"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      </div>
+      <div class="faq-a">${f.a}</div>
+    </div>`).join('');
+}
+buildFaq();
+
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const open = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!open) item.classList.add('open');
+}
+
+/* ══════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════ */
+loadGroups();
+buildTeachers305();
+openCacheDB().then(checkCacheUpdate);
+loadCacheLastUpdate();  // загружаем дату кэша и показываем в hint
+toast('👋', 'Добро пожаловать! Выберите группу или преподавателя');
+
+// Close dropdown when clicking outside — но НЕ когда открыта клавиатура
+document.addEventListener('click', e => {
+  const kbOpen = document.getElementById('kbOverlay').classList.contains('open');
+  if (!kbOpen && !e.target.closest('.search-wrap') && !e.target.closest('.dropdown')) {
+    document.getElementById('dropdown').style.display = 'none';
+  }
+});
+
+// Backdrop клавиатуры — только закрывает клавиатуру, не трогает дропдаун
+document.getElementById('kbBackdrop').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  kbClose();
+});
+
+/* ══════════════════════════════════════════════════════
+   СЕНСОРНАЯ КЛАВИАТУРА
+   ══════════════════════════════════════════════════════ */
+const KB_LAYOUTS = {
+  ru:       [['1','2','3','4','5','6','7','8','9','0','-'],['й','ц','у','к','е','н','г','ш','щ','з','х'],['ф','ы','в','а','п','р','о','л','д','ж','э'],['я','ч','с','м','и','т','ь','б','ю','.']],
+  ru_shift: [['1','2','3','4','5','6','7','8','9','0','-'],['Й','Ц','У','К','Е','Н','Г','Ш','Щ','З','Х'],['Ф','Ы','В','А','П','Р','О','Л','Д','Ж','Э'],['Я','Ч','С','М','И','Т','Ь','Б','Ю','.']],
+  en:       [['1','2','3','4','5','6','7','8','9','0','-'],['q','w','e','r','t','y','u','i','o','p'],['a','s','d','f','g','h','j','k','l'],['z','x','c','v','b','n','m','.']],
+  en_shift: [['1','2','3','4','5','6','7','8','9','0','-'],['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['Z','X','C','V','B','N','M','.']],
+};
+let kbLang='ru', kbShift=false, kbValue='', kbTarget=null, kbPlaceholder='';
+
+function kbMakeKey(label, handler, cls='') {
+  const btn = document.createElement('button');
+  btn.className = 'kb-key ' + cls;
+  btn.textContent = label;
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); kbFlash(btn); handler(); });
+  return btn;
+}
+function kbFlash(btn) {
+  btn.classList.add('pressed');
+  setTimeout(() => btn.classList.remove('pressed'), 130);
+}
+function kbType(ch) {
+  kbValue += ch;
+  if (kbShift && /[А-ЯA-Z]/.test(ch)) { kbShift = false; kbBuild(); }
+  kbUpdateDisplay(); kbSync(); kbUpdateSuggestions();
+}
+function kbUpdateDisplay() {
+  const el = document.getElementById('kbDisplayText');
+  if (!kbValue) { el.textContent = kbPlaceholder; el.classList.add('placeholder'); }
+  else          { el.textContent = kbValue;        el.classList.remove('placeholder'); }
+}
+function kbSync() {
+  if (!kbTarget) return;
+  kbTarget.value = kbValue;
+  kbTarget.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/* Подсказки над клавиатурой */
+
+function kbConfirm() {
+  kbSync();
+  kbClose();
+  // Ищем по тому что набрано — НЕ по первому из дропдауна
+  if (kbValue.trim().length >= 2) {
+    setTimeout(() => {
+      // Если есть точное или единственное совпадение — берём его
+      const q = kbValue.toLowerCase();
+      let best = null;
+      if (searchType === 'group') {
+        const exact = allGroups.find(g => g.name.toLowerCase() === q);
+        best = exact ? exact.name : (allGroups.filter(g => g.name.toLowerCase().includes(q))[0]?.name);
+      } else if (searchType === 'teacher') {
+        const exact = allTeachers.find(t => t.name.toLowerCase() === q);
+        best = exact ? exact.name : (allTeachers.filter(t => t.name.toLowerCase().includes(q))[0]?.name);
+      }
+      // Если нет в кэшированном списке — ищем напрямую по введённому
+      selectItem(best || kbValue.trim());
+    }, 80);
+  }
+}
+
+function kbBuild() {
+  const key = kbShift ? kbLang+'_shift' : kbLang;
+  const layout = KB_LAYOUTS[key];
+  for (let r = 0; r < 4; r++) {
+    const row = document.getElementById('kbRow' + r);
+    row.innerHTML = '';
+    (layout[r] || []).forEach(ch => row.appendChild(kbMakeKey(ch, () => kbType(ch))));
+  }
+  const row4 = document.getElementById('kbRow4');
+  row4.innerHTML = '';
+  row4.appendChild(kbMakeKey(kbShift ? '⇧ CAPS':'⇧', () => { kbShift=!kbShift; kbBuild(); }, 'kb-key--dark kb-key--wide'+(kbShift?' kb-key--shift-active':'')));
+  row4.appendChild(kbMakeKey(kbLang==='ru'?'EN':'RU', () => { kbLang=kbLang==='ru'?'en':'ru'; kbBuild(); }, 'kb-key--dark kb-key--wide'));
+  row4.appendChild(kbMakeKey('пробел', () => kbType(' '), 'kb-key--space'));
+  row4.appendChild(kbMakeKey('⌫', () => { kbValue=kbValue.slice(0,-1); kbUpdateDisplay(); kbSync(); kbUpdateSuggestions(); }, 'kb-key--dark kb-key--wide'));
+  row4.appendChild(kbMakeKey('✕', () => { kbValue=''; kbUpdateDisplay(); kbSync(); kbUpdateSuggestions(); }, 'kb-key--dark'));
+  row4.appendChild(kbMakeKey('Найти ↵', kbConfirm, 'kb-key--action kb-key--wide'));
+}
+function kbOpen(inputEl) {
+  kbTarget = inputEl;
+  kbValue  = inputEl.value || '';
+  kbPlaceholder = inputEl.placeholder || 'Введите текст...';
+  kbLang = 'ru'; kbShift = false;
+  kbUpdateDisplay(); kbBuild(); kbUpdateSuggestions();
+  document.getElementById('kbOverlay').classList.add('open');
+  inputEl.blur();
+}
+function kbClose() {
+  document.getElementById('kbOverlay').classList.remove('open');
+  document.getElementById('kbSuggestions').classList.remove('has-items');
+  kbTarget = null;
+}
+
+/* ── Ресайз клавиатуры ── */
+(function() {
+  const VMIN = 0.20; // 20% высоты экрана — минимум
+  const VMAX = 0.80; // 80% высоты экрана — максимум
+  const STORE_KEY = 'kbHeightFrac';
+
+  let isDragging = false;
+  let startY = 0;
+  let startH = 0;
+
+  // Вычисляем CSS-переменные по высоте клавиатуры
+  function applyKbSize(frac) {
+    frac = Math.min(VMAX, Math.max(VMIN, frac));
+    const vh = window.innerHeight;
+    const h  = Math.round(vh * frac);
+
+    // Масштабируем клавиши пропорционально (базовая высота = 40% экрана → frac=0.4)
+    const scale  = frac / 0.40;
+    const keyH   = Math.round(62  * scale);
+    const keyMin = Math.round(58  * scale);
+    const keyMax = Math.round(76  * scale);
+    const font   = Math.round(21  * scale);
+    const fontSm = Math.round(14  * scale);
+    const gap    = Math.round(10  * scale);
+    const gapR   = Math.round(7   * scale);
+
+    const kb = document.querySelector('.kb');
+    if (kb) {
+      kb.style.maxHeight = h + 'px';
+      kb.style.overflow  = 'hidden auto';
+      kb.style.setProperty('--kb-key-h',   keyH   + 'px');
+      kb.style.setProperty('--kb-key-min', keyMin + 'px');
+      kb.style.setProperty('--kb-key-max', keyMax + 'px');
+      kb.style.setProperty('--kb-font',    font   + 'px');
+      kb.style.setProperty('--kb-font-sm', fontSm + 'px');
+      kb.style.setProperty('--kb-gap',     gap    + 'px');
+    }
+
+    try { localStorage.setItem(STORE_KEY, String(frac)); } catch(e) {}
+  }
+
+  // Восстанавливаем сохранённый размер
+  function loadSavedSize() {
+    try {
+      const v = parseFloat(localStorage.getItem(STORE_KEY));
+      if (!isNaN(v)) return applyKbSize(v);
+    } catch(e) {}
+    applyKbSize(0.38); // дефолт — чуть меньше 40%
+  }
+
+  function onDragStart(e) {
+    isDragging = true;
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    const kb = document.querySelector('.kb');
+    startH = kb ? kb.getBoundingClientRect().height : window.innerHeight * 0.38;
+    document.getElementById('kbResizeHandle').classList.add('dragging');
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  }
+
+  function onDragMove(e) {
+    if (!isDragging) return;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const delta = startY - clientY;           // тянем вверх → delta > 0 → больше
+    const newH  = startH + delta;
+    applyKbSize(newH / window.innerHeight);
+    e.preventDefault();
+  }
+
+  function onDragEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    document.getElementById('kbResizeHandle').classList.remove('dragging');
+    document.body.style.userSelect = '';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadSavedSize();
+    const handle = document.getElementById('kbResizeHandle');
+    if (!handle) return;
+    handle.addEventListener('mousedown',  onDragStart, { passive: false });
+    handle.addEventListener('touchstart', onDragStart, { passive: false });
+    document.addEventListener('mousemove',  onDragMove, { passive: false });
+    document.addEventListener('touchmove',  onDragMove, { passive: false });
+    document.addEventListener('mouseup',    onDragEnd);
+    document.addEventListener('touchend',   onDragEnd);
+  });
+  // Применяем сразу (до DOMContentLoaded если скрипт в конце)
+  window.addEventListener('load', loadSavedSize);
+})();
+// Перехватываем фокус и тач на все <input> (с учётом debug-режима)
+document.addEventListener('touchstart', e => {
+  if (!_kbIntercepting) return;
+  if (e.target.tagName==='INPUT') { e.preventDefault(); kbOpen(e.target); }
+}, { passive: false });
+document.addEventListener('click', e => {
+  if (!_kbIntercepting) return;
+  if (e.target.tagName==='INPUT') { e.target.blur(); kbOpen(e.target); }
+}, true);
+document.addEventListener('focusin', e => {
+  if (!_kbIntercepting) return;
+  if (e.target.tagName==='INPUT') { e.preventDefault(); e.target.blur(); kbOpen(e.target); }
+});
+
+/* ══════════════════════════════════════════
+   ОФЛАЙН-КЭШ РАСПИСАНИЯ (IndexedDB)
+   ══════════════════════════════════════════ */
+
+</script>
+</body>
+</html>
