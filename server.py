@@ -299,8 +299,52 @@ def cache_names():
     return jsonify(list(iter_cache_index(etype)))
 
 
+@app.route('/api/fullscreen-exit', methods=['POST'])
+def fullscreen_exit():
+    """
+    Выходит из полноэкранного режима Chromium на уровне ОС.
+    Работает на Lubuntu через xdotool (F11 = toggle fullscreen в Chromium).
+    """
+    import subprocess, os
+    display = os.environ.get('DISPLAY', ':0')
+    methods_tried = []
+
+    # Способ 1: xdotool — отправляем F11 в активное окно браузера
+    try:
+        result = subprocess.run(
+            ['xdotool', 'key', '--clearmodifiers', 'F11'],
+            env={**os.environ, 'DISPLAY': display},
+            capture_output=True, timeout=5
+        )
+        methods_tried.append(f"xdotool F11: returncode={result.returncode}")
+        if result.returncode == 0:
+            return jsonify({"ok": True, "method": "xdotool F11"})
+    except FileNotFoundError:
+        methods_tried.append("xdotool: not found")
+    except Exception as e:
+        methods_tried.append(f"xdotool: {e}")
+
+    # Способ 2: wmctrl — снимаем fullscreen с активного окна
+    try:
+        result = subprocess.run(
+            ['wmctrl', '-r', ':ACTIVE:', '-b', 'remove,fullscreen'],
+            env={**os.environ, 'DISPLAY': display},
+            capture_output=True, timeout=5
+        )
+        methods_tried.append(f"wmctrl: returncode={result.returncode}")
+        if result.returncode == 0:
+            return jsonify({"ok": True, "method": "wmctrl"})
+    except FileNotFoundError:
+        methods_tried.append("wmctrl: not found")
+    except Exception as e:
+        methods_tried.append(f"wmctrl: {e}")
+
+    return jsonify({"ok": False, "tried": methods_tried}), 200
+
+
 @app.route('/api/health')
 def health():
+    """Лёгкий healthcheck. Фронт пингует каждые 5с, mai-kiosk.sh ждёт при старте."""
     return jsonify({"status": "ok", "ts": time.time()})
 
 
@@ -323,7 +367,37 @@ def index():
     return "<h2>Положи mai_kiosk.html рядом с server.py</h2>", 404
 
 
+@app.route('/on.mp4')
+def afk_video():
+    """AFK-видео для заставки. conditional=True → поддержка Range-запросов,
+    нужна для плавного looping <video> в браузере."""
+    f = KIOSK_DIR / 'on.mp4'
+    if not f.exists():
+        return jsonify({"error": "on.mp4 not found"}), 404
+    return send_from_directory(str(KIOSK_DIR), 'on.mp4', conditional=True)
+
+
+@app.route('/lab-photos/<path:filename>')
+def lab_photos(filename):
+    """Раздаёт фото лабораторий из папки lab-photos/ рядом с server.py.
+    Если файла нет — 404, фронт автоматически покажет заглушку."""
+    folder = KIOSK_DIR / 'lab-photos'
+    if not folder.exists() or not (folder / filename).exists():
+        return jsonify({"error": "photo not found"}), 404
+    return send_from_directory(str(folder), filename, conditional=True)
+
+
+@app.route('/avatars_teachers/<path:filename>')
+def teacher_avatars(filename):
+    """Раздаёт аватарки преподавателей из папки avatars_teachers/.
+    Если файла нет — фронт сам подставит кружок с инициалами."""
+    folder = KIOSK_DIR / 'avatars_teachers'
+    if not folder.exists() or not (folder / filename).exists():
+        return jsonify({"error": "avatar not found"}), 404
+    return send_from_directory(str(folder), filename, conditional=True)
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8765))
-    print(f"\n╔══════════════════╗\n║ localhost:{port}   ║\n╚══════════════════╝\n")
+    print(f"\n╔══════════════════╗\n║ localhost:{port} ║\n╚══════════════════╝\n")
     app.run(host='0.0.0.0', port=port, debug=False)

@@ -258,6 +258,13 @@ input,button,select{font-family:inherit;}
   background:var(--c-al);display:flex;align-items:center;justify-content:center;
   font-size:16px;font-weight:800;color:var(--c-accent);
 }
+/* Если у препода есть фото — рендерится как <img> со скруглённым квадратом */
+img.avatar.avatar--photo{
+  border-radius:14px;
+  object-fit:cover;
+  background:var(--c-bg2);
+  display:block;
+}
 .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--c-border);}
 .stat-cell{background:white;padding:32px 28px;}
 .stat-cell:hover{background:var(--c-bg2);}
@@ -313,6 +320,7 @@ input,button,select{font-family:inherit;}
 
 /* ── ANIMATIONS ── */
 @keyframes fadeInUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.93);}to{opacity:1;transform:scale(1);}}
 @keyframes spin{to{transform:rotate(360deg);}}
 @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
@@ -383,8 +391,8 @@ h1, h2 { text-wrap: balance; }
 }
 .kb-resize-handle:hover .kb-resize-hint{opacity:1;}
 
-.kb{background:#E2E6EC;border-radius:0;padding:10px 14px 28px;box-shadow:0 -8px 48px rgba(0,0,0,.2);transform:translateY(100%);transition:transform .35s cubic-bezier(.34,1.1,.64,1);user-select:none;overflow:hidden;}
-.kb-overlay.open .kb{transform:translateY(0);}
+.kb{background:#E2E6EC;border-radius:0;padding:10px 14px 28px;box-shadow:0 -8px 48px rgba(0,0,0,0);transform:translateY(100%);transition:transform .35s cubic-bezier(.34,1.1,.64,1),box-shadow .35s ease;user-select:none;overflow:hidden;}
+.kb-overlay.open .kb{transform:translateY(0);box-shadow:0 -8px 48px rgba(0,0,0,.2);}
 
 /* Масштабирование клавиш */
 .kb-rows{display:flex;flex-direction:column;gap:var(--kb-gap, 10px);}
@@ -419,7 +427,7 @@ h1, h2 { text-wrap: balance; }
 .exit-toast__title{font-size:26px;font-weight:800;margin-bottom:8px;}
 .exit-toast__sub{font-size:14px;color:rgba(255,255,255,.45);margin-bottom:32px;letter-spacing:.03em;}
 .exit-toast__btns{display:flex;gap:14px;justify-content:center;}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:fadeInUp .3s var(--ease-o) both;}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:fadeIn .25s var(--ease-o) both;}
 .modal-bg.out{animation:none;opacity:0;transition:opacity .25s;}
 .modal{background:white;border-radius:var(--r-2xl);padding:48px;max-width:680px;width:90%;max-height:85vh;overflow-y:auto;animation:scaleIn .35s var(--ease-s) both;}
 .modal-close{position:absolute;top:20px;right:20px;width:40px;height:40px;border-radius:50%;background:var(--c-bg2);border:none;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background var(--dur-f);}
@@ -430,6 +438,61 @@ h1, h2 { text-wrap: balance; }
   .dept-grid{grid-template-columns:1fr;}
   .stat-row{grid-template-columns:repeat(2,1fr);}
 }
+
+/* ── AFK-оверлей (заставка-видео) ────────────────────────────── */
+.afk-overlay{
+  position:fixed;inset:0;z-index:15000;
+  background:#000;
+  opacity:0;pointer-events:none;
+  transition:opacity .45s ease-in-out;
+  display:flex;align-items:center;justify-content:center;
+}
+.afk-overlay.show{ opacity:1; pointer-events:auto; }
+.afk-overlay video{
+  width:100%;height:100%;
+  object-fit:cover;
+  background:#000;
+  display:block;
+}
+
+/* ── Модалка лаборатории (широкая) + карусель фото ───────────── */
+.modal--wide{max-width:1280px; width:92vw; max-height:90vh; padding:32px 40px;}
+
+.lab-modal__hero{display:flex; align-items:flex-start; gap:20px; margin-bottom:28px; padding-right:48px;}
+.lab-modal__icon{font-size:56px; line-height:1; flex-shrink:0;}
+.lab-modal__title{font-size:1.9rem; font-weight:800; letter-spacing:-.03em; line-height:1.15; margin-bottom:8px;}
+.lab-modal__room{display:inline-block; padding:4px 14px; background:rgba(2,113,255,.1); color:var(--c-accent); border-radius:999px; font-size:13px; font-weight:700;}
+
+.lab-modal__body{display:grid; grid-template-columns: 1.1fr 1fr; gap:36px; align-items:start;}
+@media (max-width:900px){ .lab-modal__body{grid-template-columns:1fr;} }
+
+.lab-modal__section{margin-bottom:24px;}
+.lab-modal__section:last-child{margin-bottom:0;}
+.lab-modal__section h3{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--c-text2); margin-bottom:10px;}
+.lab-modal__section p{color:var(--c-text); line-height:1.65; font-size:15px;}
+.lab-modal__section ul{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;}
+.lab-modal__section ul li{position:relative; padding-left:18px; line-height:1.5; font-size:14px; color:var(--c-text);}
+.lab-modal__section ul li::before{content:''; position:absolute; left:0; top:.55em; width:6px; height:6px; border-radius:50%; background:var(--c-accent);}
+
+/* Карусель */
+.carousel{position:relative; border-radius:20px; overflow:hidden; background:#0E1117; aspect-ratio:4/3; user-select:none; touch-action:pan-y;}
+.carousel__slide{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .5s ease; pointer-events:none;}
+.carousel__slide.active{opacity:1;}
+.carousel__placeholder{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:rgba(255,255,255,.55); font-size:14px; text-align:center; padding:24px;}
+.carousel__placeholder-icon{font-size:64px; opacity:.4;}
+.carousel__btn{position:absolute; top:50%; transform:translateY(-50%); width:48px; height:48px; border-radius:50%; background:rgba(0,0,0,.55); color:white; border:none; cursor:pointer; font-size:26px; line-height:1; display:flex; align-items:center; justify-content:center; transition:background .15s, transform .15s; z-index:2; font-family:inherit;}
+.carousel__btn:hover{background:rgba(0,0,0,.78); transform:translateY(-50%) scale(1.06);}
+.carousel__btn:active{transform:translateY(-50%) scale(.94);}
+.carousel__btn--prev{left:14px;}
+.carousel__btn--next{right:14px;}
+.carousel__btn[disabled]{opacity:.3; cursor:not-allowed;}
+.carousel__dots{position:absolute; bottom:16px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:2; padding:6px 10px; background:rgba(0,0,0,.35); border-radius:999px; backdrop-filter:blur(8px);}
+.carousel__dot{width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.45); cursor:pointer; transition:background .15s, transform .15s; border:none; padding:0;}
+.carousel__dot.active{background:white; transform:scale(1.35);}
+
+/* Сделать карточки лаб явно кликабельными */
+.lab-card{cursor:pointer;}
+.lab-card__more{display:inline-flex; align-items:center; gap:4px; margin-top:14px; font-size:12px; font-weight:700; color:var(--c-accent); letter-spacing:.02em;}
 </style>
 </head>
 <body>
@@ -648,26 +711,7 @@ h1, h2 { text-wrap: balance; }
       <hr class="divider" style="margin-bottom:60px;">
       <div class="section-label">Инфраструктура</div>
       <h2 class="section-title reveal">Учебные лаборатории</h2>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
-        <div class="card card--hov reveal" style="padding:24px;">
-          <div style="font-size:28px;margin-bottom:14px;">🔬</div>
-          <div style="font-weight:700;margin-bottom:6px;">Лаб. измерительных систем</div>
-          <div style="font-size:13px;color:var(--c-text2);">Прецизионное оборудование для метрологических исследований</div>
-          <div style="margin-top:12px;"><span class="badge badge--ok" style="font-size:11px;">Ауд. 3-101</span></div>
-        </div>
-        <div class="card card--hov reveal rd1" style="padding:24px;">
-          <div style="font-size:28px;margin-bottom:14px;">🤖</div>
-          <div style="font-weight:700;margin-bottom:6px;">Лаб. систем управления БПЛА</div>
-          <div style="font-size:13px;color:var(--c-text2);">Стенды для отработки автопилотов и навигационных систем</div>
-          <div style="margin-top:12px;"><span class="badge badge--ok" style="font-size:11px;">Ауд. 3-254</span></div>
-        </div>
-        <div class="card card--hov reveal rd2" style="padding:24px;">
-          <div style="font-size:28px;margin-bottom:14px;">💻</div>
-          <div style="font-weight:700;margin-bottom:6px;">Компьютерный класс</div>
-          <div style="font-size:13px;color:var(--c-text2);">Моделирование в MATLAB/Simulink, проектирование систем</div>
-          <div style="margin-top:12px;"><span class="badge badge--ok" style="font-size:11px;">Ауд. 3-314</span></div>
-        </div>
-      </div>
+      <div id="labsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;"></div>
 
       <!-- Контакты -->
       <hr class="divider" style="margin-bottom:48px;">
@@ -819,14 +863,14 @@ h1, h2 { text-wrap: balance; }
 <div class="kb-overlay" id="kbOverlay">
   <!-- Backdrop: тап здесь закрывает клавиатуру, но НЕ трогает дропдаун -->
   <div class="kb-backdrop" id="kbBackdrop"></div>
+  <!-- Полоса подсказок (sibling .kb, не внутри: чтобы .kb имел стабильную высоту) -->
+  <div class="kb-suggestions" id="kbSuggestions"></div>
   <div class="kb">
     <!-- Ручка для изменения размера -->
     <div class="kb-resize-handle" id="kbResizeHandle">
       <div class="kb-resize-bar"></div>
       <div class="kb-resize-hint">тяни чтобы изменить размер</div>
     </div>
-    <!-- Полоса подсказок над клавиатурой -->
-    <div class="kb-suggestions" id="kbSuggestions"></div>
     <div class="kb-display" id="kbDisplay">
       <svg width="18" height="18" fill="none" stroke="var(--c-text3)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <div class="kb-display-text placeholder" id="kbDisplayText">Введите текст...</div>
@@ -845,11 +889,18 @@ h1, h2 { text-wrap: balance; }
 <!-- ══ ДИАЛОГ ЭКСТРЕННОГО ВЫХОДА ══ -->
 <div class="exit-toast" id="exitToast">
   <div class="exit-toast__title">🔐 Выход из киоска</div>
-  <div class="exit-toast__sub">Ctrl + Shift + Alt + A + E</div>
+  <div class="exit-toast__sub">Ctrl + Q  ·  или 5 тапов в левом верхнем углу</div>
   <div class="exit-toast__btns">
     <button class="btn btn--p" onclick="confirmExit()">Выйти</button>
     <button class="btn btn--g" onclick="cancelExit()" style="background:#333;color:white;border-color:#555;">Отмена</button>
   </div>
+</div>
+
+<!-- ══ AFK-ОВЕРЛЕЙ (заставка после простоя) ══ -->
+<div class="afk-overlay" id="afkOverlay">
+  <video id="afkVideo" muted loop playsinline preload="auto" disablepictureinpicture>
+    <source src="/on.mp4" type="video/mp4">
+  </video>
 </div>
 
 <script>
@@ -1132,7 +1183,7 @@ function showDropdown(q) {
       .map(g => ({ label: g.name, sub: g.faculty || '', value: g.name }));
   } else if (searchType === 'teacher') {
     items = allTeachers.filter(t => t.name.toLowerCase().includes(q)).slice(0, 12)
-      .map(t => ({ label: t.name, sub: t.uid ? 'ID: ' + t.uid.substring(0,8) + '...' : '', value: t.name }));
+      .map(t => ({ label: t.name, sub: '', value: t.name }));
   }
 
   // Если список пустой (не загрузился или нет совпадений) — всегда показываем прямой поиск
@@ -1320,6 +1371,208 @@ function closeModal(e) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 /* ══════════════════════════════════════════
+   ЛАБОРАТОРИИ — данные + модалка с каруселью
+   ══════════════════════════════════════════
+   Чтобы добавить/изменить лабораторию — отредактируй массив LABS ниже.
+   Фотки клади в папку lab-photos/ рядом с server.py.
+   Если фото нет — автоматически покажется заглушка.
+   ══════════════════════════════════════════ */
+const LABS = [
+  {
+    id: 'lab-3-101',
+    icon: '🔬',
+    title: 'Лаб. измерительных систем',
+    short: 'Прецизионное оборудование для метрологических исследований',
+    room: '3-101',
+    description: '{Подробное описание лаборатории — какие задачи решают, какие курсы здесь проходят, чем уникальна. 2-4 предложения.}',
+    equipment: [
+      '{Оборудование 1 — например: цифровые мультиметры Keysight 34461A}',
+      '{Оборудование 2}',
+      '{Оборудование 3}',
+      '{Оборудование 4}',
+    ],
+    activities: [
+      '{Лабораторные работы по дисциплине «Метрология»}',
+      '{Курсовые проекты студентов 3-4 курса}',
+      '{Дипломные исследования}',
+    ],
+    photos: [
+      '/lab-photos/3-101-1.jpg',
+      '/lab-photos/3-101-2.jpg',
+      '/lab-photos/3-101-3.jpg',
+    ],
+  },
+  {
+    id: 'lab-3-254',
+    icon: '🤖',
+    title: 'Лаб. систем управления БПЛА',
+    short: 'Стенды для отработки автопилотов и навигационных систем',
+    room: '3-254',
+    description: '{Подробное описание лаборатории БПЛА — что за стенды, какие задачи решают студенты, связь с реальными разработками.}',
+    equipment: [
+      '{Полётный стенд "Letающее крыло"}',
+      '{Симуляторы автопилота PX4/ArduPilot}',
+      '{Инерциальные измерительные блоки}',
+      '{GPS/ГЛОНАСС-приёмники}',
+    ],
+    activities: [
+      '{Разработка алгоритмов автопилота}',
+      '{HIL-моделирование (hardware-in-the-loop)}',
+      '{Лабораторные по навигации}',
+    ],
+    photos: [
+      '/lab-photos/3-254-1.jpg',
+      '/lab-photos/3-254-2.jpg',
+      '/lab-photos/3-254-3.jpg',
+      '/lab-photos/3-254-4.jpg',
+    ],
+  },
+  {
+    id: 'lab-3-314',
+    icon: '💻',
+    title: 'Компьютерный класс',
+    short: 'Моделирование в MATLAB/Simulink, проектирование систем',
+    room: '3-314',
+    description: '{Подробное описание — сколько рабочих мест, какое ПО установлено, какие занятия здесь проходят.}',
+    equipment: [
+      '{Рабочих мест: N}',
+      '{ПО: MATLAB/Simulink, Altium Designer, SolidWorks}',
+      '{Сервер для расчётов}',
+    ],
+    activities: [
+      '{Лабораторные по моделированию систем управления}',
+      '{Практикум по программированию микроконтроллеров}',
+      '{Самостоятельная работа студентов}',
+    ],
+    photos: [
+      '/lab-photos/3-314-1.jpg',
+      '/lab-photos/3-314-2.jpg',
+    ],
+  },
+];
+
+function buildLabs(){
+  const grid = document.getElementById('labsGrid');
+  if (!grid) return;
+  grid.innerHTML = LABS.map((lab, i) => `
+    <div class="card card--hov reveal lab-card ${i?('rd'+i):''}" style="padding:24px;" onclick="openLabModal('${lab.id}')">
+      <div style="font-size:28px;margin-bottom:14px;">${lab.icon}</div>
+      <div style="font-weight:700;margin-bottom:6px;">${lab.title}</div>
+      <div style="font-size:13px;color:var(--c-text2);">${lab.short}</div>
+      <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <span class="badge badge--ok" style="font-size:11px;">Ауд. ${lab.room}</span>
+        <span class="lab-card__more">Подробнее →</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openLabModal(id){
+  const lab = LABS.find(l => l.id === id);
+  if (!lab) return;
+  const modal = document.getElementById('modal');
+
+  const photoCount = Math.max(1, lab.photos.length);
+  const showNav    = lab.photos.length > 1;
+
+  modal.innerHTML = `
+    <div class="modal-bg" onclick="closeModal(event)">
+      <div class="modal modal--wide" style="position:relative;" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+
+        <div class="lab-modal__hero">
+          <div class="lab-modal__icon">${lab.icon}</div>
+          <div>
+            <h2 class="lab-modal__title">${lab.title}</h2>
+            <span class="lab-modal__room">📍 Аудитория ${lab.room}</span>
+          </div>
+        </div>
+
+        <div class="lab-modal__body">
+          <!-- Карусель -->
+          <div class="carousel" id="labCarousel">
+            ${lab.photos.length ? lab.photos.map((src, i) => `
+              <img class="carousel__slide ${i===0?'active':''}"
+                   src="${src}" alt="${lab.title} — фото ${i+1}"
+                   data-idx="${i}"
+                   onerror="this.outerHTML='<div class=&quot;carousel__slide ${i===0?'active':''}&quot; data-idx=&quot;${i}&quot;><div class=&quot;carousel__placeholder&quot;><div class=&quot;carousel__placeholder-icon&quot;>📷</div><div>Фото скоро будет добавлено<br><span style=&quot;opacity:.5;font-size:12px;&quot;>${src}</span></div></div></div>'">
+            `).join('') : `
+              <div class="carousel__slide active">
+                <div class="carousel__placeholder">
+                  <div class="carousel__placeholder-icon">📷</div>
+                  <div>Фотографии не добавлены</div>
+                </div>
+              </div>
+            `}
+            ${showNav ? `
+              <button class="carousel__btn carousel__btn--prev" id="labCarPrev" aria-label="Предыдущее фото">‹</button>
+              <button class="carousel__btn carousel__btn--next" id="labCarNext" aria-label="Следующее фото">›</button>
+              <div class="carousel__dots" id="labCarDots">
+                ${lab.photos.map((_, i) => `<button class="carousel__dot ${i===0?'active':''}" data-idx="${i}" aria-label="Фото ${i+1}"></button>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Информация -->
+          <div>
+            <div class="lab-modal__section">
+              <h3>Описание</h3>
+              <p>${lab.description}</p>
+            </div>
+            <div class="lab-modal__section">
+              <h3>Оборудование</h3>
+              <ul>${lab.equipment.map(e => `<li>${e}</li>`).join('')}</ul>
+            </div>
+            <div class="lab-modal__section">
+              <h3>Чем занимаются</h3>
+              <ul>${lab.activities.map(a => `<li>${a}</li>`).join('')}</ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  modal.style.display = 'block';
+
+  // ── Логика карусели ────────────────────────────────────────────
+  let slideIdx = 0;
+  const slides = () => modal.querySelectorAll('.carousel__slide');
+  const dots   = () => modal.querySelectorAll('.carousel__dot');
+
+  function goTo(i){
+    slideIdx = ((i % photoCount) + photoCount) % photoCount;
+    slides().forEach((el, k) => el.classList.toggle('active', k === slideIdx));
+    dots().forEach((el, k) => el.classList.toggle('active', k === slideIdx));
+  }
+
+  if (showNav){
+    modal.querySelector('#labCarPrev')?.addEventListener('click', () => { goTo(slideIdx - 1); resetAuto(); });
+    modal.querySelector('#labCarNext')?.addEventListener('click', () => { goTo(slideIdx + 1); resetAuto(); });
+    modal.querySelectorAll('.carousel__dot').forEach(d => {
+      d.addEventListener('click', () => { goTo(parseInt(d.dataset.idx, 10)); resetAuto(); });
+    });
+
+    // Свайп по тачскрину
+    const carEl = modal.querySelector('#labCarousel');
+    let startX = null;
+    carEl.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+    carEl.addEventListener('touchend', e => {
+      if (startX === null) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) > 50) { goTo(slideIdx + (dx > 0 ? -1 : 1)); resetAuto(); }
+      startX = null;
+    });
+
+    // Автопрокрутка раз в 6 сек — самосбрасывается когда модалка закрылась
+    let autoTimer = setInterval(tick, 6000);
+    function tick(){
+      if (modal.style.display === 'none') { clearInterval(autoTimer); return; }
+      goTo(slideIdx + 1);
+    }
+    function resetAuto(){ clearInterval(autoTimer); autoTimer = setInterval(tick, 6000); }
+  }
+}
+
+/* ══════════════════════════════════════════
    ЧаВо
    ══════════════════════════════════════════ */
 const FAQS = [
@@ -1364,6 +1617,53 @@ const TEACHERS_305 = [
 // Имена для фильтра подсказок при поиске
 const TEACHERS_305_NAMES = TEACHERS_305.map(t => t.name.toLowerCase());
 
+/* ══════════════════════════════════════════
+   ФОТО ПРЕПОДАВАТЕЛЕЙ
+   ══════════════════════════════════════════
+   Чтобы добавить фото — впиши сюда пару "ключ: имя_файла".
+   Ключом может быть GUID препода (надёжнее, не зависит от регистра) или ФИО.
+   Файлы клади в папку avatars_teachers/ рядом с server.py.
+   Если файла нет/не найден — автоматически покажется кружок с инициалами как сейчас.
+   Поддерживаются jpg, png, webp.
+   ══════════════════════════════════════════ */
+const TEACHER_PHOTOS = {
+  // По GUID (надёжнее):
+  'b0062582-1d99-11e0-9baf-1c6f65450efa': 'aleshin.jpg',     // Алешин Б.С.
+  // 'b0062590-1d99-11e0-9baf-1c6f65450efa': 'afonin.jpg',      // Афонин А.А.
+  // 'eb7d5e30-1d99-11e0-9baf-1c6f65450efa': 'antonov.jpg',     // Антонов Д.А.
+
+  // По имени (если GUID лень искать):
+  // 'Алешин Борис Сергеевич': 'aleshin.jpg',
+};
+
+// Фолбэк-функция вызывается из onerror у <img>, заменяет битую картинку на кружок с инициалами
+function _avatarFallback(img, initials, color, textColor) {
+  const div = document.createElement('div');
+  div.className = 'avatar';
+  div.style.cssText = `width:${img.style.width||'52px'};height:${img.style.height||'52px'};background:${color};color:${textColor};font-size:${img.dataset.font||'15px'};font-weight:800;`;
+  div.textContent = initials;
+  img.replaceWith(div);
+}
+
+function avatarHTML(t, colorIdx, opts = {}) {
+  const size  = opts.size || 52;
+  const font  = opts.font || '15px';
+  const photo = TEACHER_PHOTOS[t.guid] || TEACHER_PHOTOS[t.name];
+  const initials = getInitials(t.name);
+  const color = AVATAR_COLORS[colorIdx];
+  const textColor = AVATAR_TEXT[colorIdx];
+  if (photo) {
+    const escName = t.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    return `<img class="avatar avatar--photo"
+                 style="width:${size}px;height:${size}px;"
+                 data-font="${font}"
+                 src="/avatars_teachers/${photo}"
+                 alt="${escName}"
+                 onerror="_avatarFallback(this, '${initials}', '${color}', '${textColor}')">`;
+  }
+  return `<div class="avatar" style="width:${size}px;height:${size}px;background:${color};color:${textColor};font-size:${font};">${initials}</div>`;
+}
+
 function getInitials(name) {
   const p = name.trim().split(' ');
   if (p.length >= 2) return p[0][0] + (p[1][0] || '');
@@ -1384,7 +1684,7 @@ function buildTeachers305() {
     card.className = 'person-card';
     card.style.cursor = 'pointer';
     card.innerHTML = `
-      <div class="avatar" style="background:${AVATAR_COLORS[ci]};color:${AVATAR_TEXT[ci]};font-size:15px;">${initials}</div>
+      ${avatarHTML(t, ci, { size: 52, font: '15px' })}
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:15px;line-height:1.3;">${t.name}</div>
         <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">${roleLabel}${t.degree ? ' · ' + t.degree : ''}</div>
@@ -1435,6 +1735,9 @@ async function loadTeacherPubs(guid, containerEl) {
 function openTeacherModal(t) {
   const modal = document.getElementById('modal');
   const pubContainerId = 'teacherPubsContainer';
+  // Цветовой индекс — тот же что у карточки в сетке (по позиции в TEACHERS_305)
+  const idx = TEACHERS_305.findIndex(x => x.guid === t.guid || x.name === t.name);
+  const ci  = (idx >= 0 ? idx : 0) % AVATAR_COLORS.length;
   modal.innerHTML = `
     <div class="modal-bg" onclick="closeModal(event)">
       <div class="modal" style="position:relative;max-width:680px;max-height:90vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()">
@@ -1442,7 +1745,7 @@ function openTeacherModal(t) {
 
         <!-- Шапка -->
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-shrink:0;">
-          <div class="avatar" style="width:60px;height:60px;font-size:19px;font-weight:800;background:var(--c-al);color:var(--c-accent);flex-shrink:0;">${getInitials(t.name)}</div>
+          ${avatarHTML(t, ci, { size: 60, font: '19px' })}
           <div>
             <div style="font-size:1.25rem;font-weight:800;letter-spacing:-.02em;line-height:1.2;">${t.name}</div>
             <div style="font-size:13px;color:var(--c-text2);margin-top:4px;">${t.role}${t.degree ? ' · ' + t.degree : ''}${t.title ? ' · ' + t.title : ''}</div>
@@ -1606,9 +1909,8 @@ async function networkMonitorTick() {
   const alive = await checkNetwork();
 
   if (alive) {
-    // Сеть есть
     if (!_netOnline) {
-      // Только что вернулась
+      // Только что вернулась сеть после подтверждённого офлайна
       _netOnline      = true;
       _netBackSince   = Date.now();
       _netOfflineSince = null;
@@ -1620,12 +1922,16 @@ async function networkMonitorTick() {
         // Если есть активный поиск — обновляем данные
         if (selectedName) fetchSchedule(selectedName);
       }, NET_BACK_GRACE);
+    } else if (_netOfflineSince !== null) {
+      // Был один-два пропущенных пинга, но порог не достигнут — ложная тревога.
+      // Сбрасываем таймер и прячем баннер cache_soon.
+      _netOfflineSince = null;
+      const bar = document.getElementById('netStatusBar');
+      if (bar) bar.style.display = 'none';
     }
   } else {
     // Сети нет
     if (_netOnline) {
-      // Только что пропала
-      _netOnline       = true;  // будем ждать порог
       _netOfflineSince = _netOfflineSince || Date.now();
       const offlineMs  = Date.now() - _netOfflineSince;
       if (offlineMs >= NET_OFFLINE_THRESHOLD) {
@@ -1667,6 +1973,67 @@ async function loadCacheLastUpdate() {
 
 // Запускаем монитор
 setInterval(networkMonitorTick, 5000);
+
+/* ══════════════════════════════════════════
+   AFK-ЗАСТАВКА (видео-оверлей)
+   ══════════════════════════════════════════
+   Логика: считаем мс с момента последнего ввода пользователя.
+   Любое pointer/touch/keyboard событие → таймер в 0 и (если играет) гасим оверлей.
+   Достигли порога → показываем <video> на весь экран, autoplay loop.
+   Заменяет внешний afk-video.sh + mpv + xprintidle.
+   ══════════════════════════════════════════ */
+const AFK_IDLE_MS  = 60000;  // порог простоя (1 минута)
+const AFK_CHECK_MS = 1000;   // период опроса (1 сек)
+let _afkLastActivity = Date.now();
+let _afkActive       = false;
+let _afkDisabled     = false;  // выставится в true если on.mp4 не загрузился
+
+function showAfk(){
+  if (_afkActive || _afkDisabled) return;
+  const ov  = document.getElementById('afkOverlay');
+  const vid = document.getElementById('afkVideo');
+  if (!ov || !vid) return;
+  _afkActive = true;
+  try { vid.currentTime = 0; } catch(_) {}
+  // play() возвращает Promise; глушим возможный reject
+  const p = vid.play();
+  if (p && p.catch) p.catch(e => console.warn('[AFK] play failed:', e));
+  ov.classList.add('show');
+}
+
+function hideAfk(){
+  if (!_afkActive) return;
+  const ov  = document.getElementById('afkOverlay');
+  const vid = document.getElementById('afkVideo');
+  if (!ov || !vid) return;
+  _afkActive = false;
+  ov.classList.remove('show');
+  // Пауcим после fade-out (450мс), чтобы не дёргался последний кадр
+  setTimeout(() => { try { vid.pause(); } catch(_) {} }, 500);
+}
+
+const _afkWake = () => {
+  _afkLastActivity = Date.now();
+  if (_afkActive) hideAfk();   // мгновенный отклик, не ждём tick
+};
+
+// capture:true — ловим события РАНЬШЕ любых обработчиков на дочерних элементах
+['pointerdown','touchstart','keydown','mousemove','wheel'].forEach(ev =>
+  document.addEventListener(ev, _afkWake, { passive: true, capture: true })
+);
+
+// Поллинг: проверяем простой раз в секунду
+setInterval(() => {
+  if (_afkDisabled || _afkActive) return;
+  const idle = Date.now() - _afkLastActivity;
+  if (idle >= AFK_IDLE_MS) showAfk();
+}, AFK_CHECK_MS);
+
+// Если /on.mp4 отдаёт 404 или битый файл — отключаем заставку насовсем
+document.getElementById('afkVideo')?.addEventListener('error', () => {
+  _afkDisabled = true;
+  console.warn('[AFK] видео не загружено (нет on.mp4 или битый кодек) — заставка отключена');
+});
 
 /* ── fetchSchedule с автоматическим fallback на кэш ── */
 async function fetchSchedule(name) {
@@ -1778,19 +2145,46 @@ const SHORTCUTS = [
     action: () => { _kbIntercepting=!_kbIntercepting;
       toast(_kbIntercepting?"🔒":"🔓", _kbIntercepting?"Сенсорная клавиатура включена":"Debug: системный ввод активен"); } },
 
-  // 2. Выход из приложения
+  // 2. Выход из приложения — простой комбо для дебага
+  //    Ctrl+Q — стандартное "Quit", не перехватывается ни LXQt, ни Chromium --kiosk.
+  //    Случайно нажать на сенсорнике невозможно (нет физ. клавиатуры в проде).
   { id:"exitApp", enabled:true, type:"combo",
-    check:(e) => e.ctrlKey&&e.shiftKey&&e.altKey&&(_pressed.has("a")||_pressed.has("A"))&&(_pressed.has("e")||_pressed.has("E")),
+    check:(e) => e.ctrlKey && !e.shiftKey && !e.altKey && (e.key==="q"||e.key==="Q"),
     action:(e) => { e.preventDefault(); document.getElementById("exitToast").classList.add("show"); } },
 
-  // 3. Выход из полноэкранного режима
+  // 3. Выход из полноэкранного режима (через сервер → xdotool F11 на уровне ОС)
   { id:"exitFullscreen", enabled:true, type:"combo",
     check:(e) => e.ctrlKey&&e.shiftKey&&e.altKey&&(e.key==="f"||e.key==="F"),
-    action:() => { if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});toast("🖥️","Выход из полноэкранного режима");}else{toast("ℹ️","Уже не в полноэкранном режиме");} } },
+    action:() => {
+      fetch(`${API}/fullscreen-exit`, {method:'POST'})
+        .then(r=>r.json())
+        .then(d => toast(d.ok ? "🖥️" : "⚠️",
+                         d.ok ? `Полноэкранный режим отключён (${d.method})` : `Не удалось: ${JSON.stringify(d.tried)}`))
+        .catch(e => toast("❌", "Ошибка: " + e.message));
+    } },
 
   // 4. Закрыть модал
   { id:"closeModal", enabled:true, type:"key", key:"Escape", action:()=>closeModal() },
 ];
+
+// ── Тач-фолбэк для выхода: 5 тапов в левом верхнем углу (60×60 px) за 2 сек ──
+// Полезно когда к стенду не подключена клавиатура.
+(function(){
+  let _cornerTaps = [];
+  const CORNER_SIZE = 60;     // px от угла
+  const TAP_WINDOW  = 2000;   // мс
+  const TAPS_NEEDED = 5;
+  document.addEventListener('pointerdown', (e) => {
+    if (e.clientX > CORNER_SIZE || e.clientY > CORNER_SIZE) return;
+    const now = Date.now();
+    _cornerTaps = _cornerTaps.filter(t => now - t < TAP_WINDOW);
+    _cornerTaps.push(now);
+    if (_cornerTaps.length >= TAPS_NEEDED) {
+      _cornerTaps = [];
+      document.getElementById("exitToast").classList.add("show");
+    }
+  }, { passive: true });
+})();
 
 document.addEventListener("keydown", e => {
   _pressed.add(e.key);
@@ -1827,6 +2221,7 @@ function buildFaq() {
     </div>`).join('');
 }
 buildFaq();
+buildLabs();
 
 function toggleFaq(btn) {
   const item = btn.closest('.faq-item');

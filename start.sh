@@ -45,6 +45,14 @@ if ! kill -0 $SERVER_PID 2>/dev/null; then
   exit 1
 fi
 
+# AFK-заставка теперь живёт прямо в браузере (mai_kiosk.html → <video>).
+# Старый afk-video.sh / mpv / xprintidle больше не используются.
+if [ -f "./on.mp4" ]; then
+  echo "$LOG_PREFIX 🎬 AFK-видео: ./on.mp4 готово"
+else
+  echo "$LOG_PREFIX ⚠ on.mp4 не найден — AFK-заставка отключится автоматически"
+fi
+
 echo "$LOG_PREFIX 🌐 Открываем браузер: http://localhost:8765"
 if command -v xdg-open &>/dev/null; then
     xdg-open "http://localhost:8765"

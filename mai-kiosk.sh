@@ -3,7 +3,9 @@
 # MAI KIOSK — Автозапуск для Lubuntu (LXQt / Openbox)
 # ═══════════════════════════════════════════════════════════════
 
-KIOSK_DIR="$HOME/mai-kiosk"
+# Папка проекта = там, где лежит сам этот скрипт.
+# Работает и для ~/mai-kiosk, и для ~/Desktop/kiosk, и для любого другого пути.
+KIOSK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORT=8765
 LOG="$KIOSK_DIR/kiosk.log"
 
@@ -31,15 +33,12 @@ for i in $(seq 1 10); do
   fi
 done
 
-# ── 2. AFK-видеозаставка ────────────────────────────────────────
-if [ -f "$KIOSK_DIR/afk-video.sh" ] && [ -f "$KIOSK_DIR/on.mp4" ]; then
-  DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" \
-    bash "$KIOSK_DIR/afk-video.sh" >> "$LOG" 2>&1 &
-  AFK_PID=$!
-  echo "[$(date)] AFK-монитор PID=$AFK_PID" >> "$LOG"
+# ── 2. AFK-заставка теперь живёт прямо в браузере (mai_kiosk.html) ─
+# Старый afk-video.sh с mpv больше не нужен. Только напомним если on.mp4 отсутствует.
+if [ -f "$KIOSK_DIR/on.mp4" ]; then
+  echo "[$(date)] AFK-видео: $KIOSK_DIR/on.mp4 готово (играется браузером)" >> "$LOG"
 else
-  AFK_PID=""
-  [ ! -f "$KIOSK_DIR/on.mp4" ] && echo "[$(date)] ⚠ on.mp4 не найден — AFK отключён" >> "$LOG"
+  echo "[$(date)] ⚠ on.mp4 не найден — AFK-заставка отключится автоматически" >> "$LOG"
 fi
 
 # ── 3. Браузер в режиме киоска ──────────────────────────────────
@@ -79,10 +78,10 @@ echo "[$(date)] Браузер PID=$BROWSER_PID" >> "$LOG"
 # ── 4. Завершение ───────────────────────────────────────────────
 cleanup() {
   echo "[$(date)] Завершение..." >> "$LOG"
-  kill $SERVER_PID $BROWSER_PID $AFK_PID 2>/dev/null
+  kill $SERVER_PID $BROWSER_PID 2>/dev/null
 }
 trap cleanup EXIT INT TERM
 wait $BROWSER_PID
 
-kill $SERVER_PID $AFK_PID 2>/dev/null
+kill $SERVER_PID 2>/dev/null
 echo "[$(date)] MAI Kiosk завершён" >> "$LOG"

@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """
-wifi_schedule_update.py — Плановое обновление в 10:00 через Wi-Fi
+wifi_schedule_update.py — Wi-Fi + сохранение кэша
 ==================================================================
-Cron (10:00 каждый день):
-  0 10 * * * python3 ~/mai-kiosk/wifi_schedule_update.py >> ~/mai-kiosk/update.log 2>&1
+Режимы:
+  --setup        Первичная настройка (зашифровать SSID/пароль на этой машине)
+  --startup      Старт стенда: подключаемся, ждём пока кэш полностью сохранится,
+                 отключаемся. Это то что нужно вызывать из start.sh / mai-kiosk.sh.
+  (без флага)    Плановое обновление (cron в 10:00).
 
-Первичная настройка (один раз):
-  python3 wifi_schedule_update.py --setup
+Cron-строка для планового апдейта:
+  0 10 * * * python3 ~/mai-kiosk/wifi_schedule_update.py >> ~/mai-kiosk/update.log 2>&1
 """
 
 import os, sys, json, time, subprocess, logging, hashlib, base64
@@ -77,35 +80,82 @@ def wait_for_network(timeout=15) -> bool:
         except: time.sleep(1)
     return False
 
+def have_internet_already() -> bool:
+    """Проверка: интернет уже работает (мы где-то уже подключены)."""
+    import requests
+    try:
+        requests.get('https://maiapp.lavafrai.ru', timeout=3)
+        return True
+    except: return False
 
-# ── Основной поток ───────────────────────────────────────────────
-def run_update():
-    log.info("=" * 55)
-    log.info("MAI Kiosk — плановое обновление [SCHEDULED-10:00]")
-    log.info("=" * 55)
 
+# ── Общая часть: подключаемся (если нужно) и сохраняем кэш ───────
+def _connect_if_needed_and_cache(context: str):
+    """Возвращает (connected_via_us, ssid_we_used). Кэш кэшируется СИНХРОННО:
+    функция вернёт управление только когда cache_schedule.py отработает полностью.
+    """
+    # 1. Если интернет уже есть — не дёргаем Wi-Fi
+    if have_internet_already():
+        log.info("Интернет уже работает — Wi-Fi не трогаем")
+        _run_cache_blocking()
+        return False, None
+
+    # 2. Нужно подключиться по сохранённым creds
     if not CREDS_FILE.exists():
         log.error("Файл credentials не найден: %s", CREDS_FILE)
-        log.error("Запустите: python3 %s --setup", __file__)
-        sys.exit(1)
+        log.error("Запустите один раз: python3 %s --setup", __file__)
+        return False, None
 
     creds = decrypt_creds()
     ssid, pwd = creds['ssid'], creds['password']
 
-    connected = wifi_connect(ssid, pwd)
-    if connected and not wait_for_network():
-        log.warning("Сеть недоступна после подключения")
-        wifi_disconnect(ssid)
-        return
+    if not wifi_connect(ssid, pwd):
+        log.error("Подключиться не удалось — кэш не обновится")
+        return False, ssid
 
-    # Запускаем полное сохранение расписания
-    log.info("Запускаем cache_schedule.py...")
+    if not wait_for_network():
+        log.warning("Сеть не отвечает после подключения — отключаемся")
+        wifi_disconnect(ssid)
+        return False, ssid
+
+    # 3. Сохраняем кэш (блокирующе)
+    _run_cache_blocking()
+    return True, ssid
+
+
+def _run_cache_blocking():
+    """Синхронно запускает cache_schedule.py — выходим только когда он завершится."""
     cache_script = KIOSK_DIR / 'cache_schedule.py'
-    subprocess.run([sys.executable, str(cache_script)], check=False)
+    if not cache_script.exists():
+        log.error("cache_schedule.py не найден: %s", cache_script)
+        return
+    log.info("Запускаем cache_schedule.py (блокирующе)...")
+    t0 = time.time()
+    r = subprocess.run([sys.executable, str(cache_script)], check=False)
+    dt = time.time() - t0
+    log.info("cache_schedule.py завершён за %.1f сек (exit=%s)", dt, r.returncode)
 
-    if connected:
+
+# ── Режим: startup (вызывается из start.sh / mai-kiosk.sh) ───────
+def run_startup():
+    log.info("=" * 55)
+    log.info("MAI Kiosk — запуск стенда [STARTUP]")
+    log.info("=" * 55)
+    connected, ssid = _connect_if_needed_and_cache('startup')
+    # Если подключались мы сами — отключаемся. Если интернет был уже — оставляем.
+    if connected and ssid:
         wifi_disconnect(ssid)
+    log.info("STARTUP завершён.")
 
+
+# ── Режим: scheduled (cron в 10:00) ──────────────────────────────
+def run_update():
+    log.info("=" * 55)
+    log.info("MAI Kiosk — плановое обновление [SCHEDULED-10:00]")
+    log.info("=" * 55)
+    connected, ssid = _connect_if_needed_and_cache('scheduled')
+    if connected and ssid:
+        wifi_disconnect(ssid)
     log.info("Пауза 5 минут...")
     time.sleep(300)
     log.info("Готово.")
@@ -119,5 +169,7 @@ if __name__ == '__main__':
         encrypt_creds(ssid, pwd)
         print(f"\ncrontab -e → добавить строку:")
         print(f"0 10 * * * python3 {Path(__file__).resolve()} >> {KIOSK_DIR}/update.log 2>&1")
+    elif '--startup' in sys.argv:
+        run_startup()
     else:
         run_update()
