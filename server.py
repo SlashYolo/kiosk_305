@@ -301,51 +301,107 @@ def cache_names():
 
 @app.route('/api/fullscreen-exit', methods=['POST'])
 def fullscreen_exit():
-    """
-    Выходит из полноэкранного режима Chromium на уровне ОС.
-    Работает на Lubuntu через xdotool (F11 = toggle fullscreen в Chromium).
-    """
-    import subprocess, os
+    """Legacy: xdotool F11. Не работает в --kiosk режиме Chromium."""
+    import subprocess as sp
     display = os.environ.get('DISPLAY', ':0')
+    try:
+        r = sp.run(['xdotool', 'key', '--clearmodifiers', 'F11'],
+                   env={**os.environ, 'DISPLAY': display}, capture_output=True, timeout=5)
+        return jsonify({"ok": r.returncode == 0, "method": "xdotool F11"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+
+@app.route('/api/show-panel', methods=['POST'])
+def show_panel():
+    """Разблокирует системную панель (LXQt) или сворачивает окно (универсальный фолбэк).
+    Работает на любом X11-десктопе через xdotool."""
+    import subprocess as sp, configparser
+    display = os.environ.get('DISPLAY', ':0')
+    env = {**os.environ, 'DISPLAY': display}
     methods_tried = []
 
-    # Способ 1: xdotool — отправляем F11 в активное окно браузера
+    # Способ 1: LXQt — обновляем panel.conf + перезапускаем lxqt-panel
+    panel_conf = Path.home() / '.config' / 'lxqt' / 'panel.conf'
+    lxqt_ok = False
     try:
-        result = subprocess.run(
-            ['xdotool', 'key', '--clearmodifiers', 'F11'],
-            env={**os.environ, 'DISPLAY': display},
-            capture_output=True, timeout=5
-        )
-        methods_tried.append(f"xdotool F11: returncode={result.returncode}")
-        if result.returncode == 0:
-            return jsonify({"ok": True, "method": "xdotool F11"})
+        if panel_conf.exists():
+            config = configparser.ConfigParser()
+            config.read(str(panel_conf))
+            for section in config.sections():
+                if 'panel' in section.lower() or section == 'Global':
+                    config[section]['hidable'] = '0'
+                    config[section]['visible'] = 'true'
+            with open(str(panel_conf), 'w') as f:
+                config.write(f)
+            sp.run(['pkill', 'lxqt-panel'], capture_output=True, timeout=3)
+            time.sleep(0.3)
+            sp.Popen(['lxqt-panel'], env=env, start_new_session=True,
+                     stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+            methods_tried.append("lxqt-panel: restarted")
+            lxqt_ok = True
+        else:
+            methods_tried.append("panel.conf: not found")
     except FileNotFoundError:
-        methods_tried.append("xdotool: not found")
+        methods_tried.append("lxqt-panel: not installed")
+    except Exception as e:
+        methods_tried.append(f"lxqt-panel: {e}")
+
+    if lxqt_ok:
+        return jsonify({"ok": True, "method": "lxqt-panel", "tried": methods_tried})
+
+    # Способ 2: универсальный — сворачиваем активное окно через xdotool
+    try:
+        r = sp.run(['xdotool', 'getactivewindow', 'windowminimize'],
+                   env=env, capture_output=True, timeout=5)
+        if r.returncode == 0:
+            methods_tried.append("xdotool: window minimized")
+            return jsonify({"ok": True, "method": "xdotool minimize", "tried": methods_tried})
+        methods_tried.append(f"xdotool minimize: exit {r.returncode}")
+    except FileNotFoundError:
+        methods_tried.append("xdotool: not installed")
     except Exception as e:
         methods_tried.append(f"xdotool: {e}")
 
-    # Способ 2: wmctrl — снимаем fullscreen с активного окна
+    # Способ 3: wmctrl
     try:
-        result = subprocess.run(
-            ['wmctrl', '-r', ':ACTIVE:', '-b', 'remove,fullscreen'],
-            env={**os.environ, 'DISPLAY': display},
-            capture_output=True, timeout=5
-        )
-        methods_tried.append(f"wmctrl: returncode={result.returncode}")
-        if result.returncode == 0:
-            return jsonify({"ok": True, "method": "wmctrl"})
-    except FileNotFoundError:
-        methods_tried.append("wmctrl: not found")
-    except Exception as e:
-        methods_tried.append(f"wmctrl: {e}")
+        r = sp.run(['wmctrl', '-r', ':ACTIVE:', '-b', 'add,hidden'],
+                   env=env, capture_output=True, timeout=5)
+        if r.returncode == 0:
+            methods_tried.append("wmctrl: window hidden")
+            return jsonify({"ok": True, "method": "wmctrl", "tried": methods_tried})
+    except Exception:
+        pass
 
-    return jsonify({"ok": False, "tried": methods_tried}), 200
+    return jsonify({"ok": False, "tried": methods_tried})
 
 
 @app.route('/api/health')
 def health():
     """Лёгкий healthcheck. Фронт пингует каждые 5с, mai-kiosk.sh ждёт при старте."""
     return jsonify({"status": "ok", "ts": time.time()})
+
+
+@app.route('/api/cache-progress')
+def cache_progress():
+    """Прогресс обновления кэша. Если файл не обновлялся >90 сек но ещё in_progress —
+    считаем процесс мёртвым и возвращаем in_progress=false."""
+    f = CACHE / '_progress.json'
+    if not f.exists():
+        return jsonify({"in_progress": False, "phase": "none"})
+    try:
+        data = json.loads(f.read_text(encoding='utf-8'))
+        # Проверка на «протухший» процесс: файл не менялся >90с, но in_progress=true
+        if data.get('in_progress'):
+            mtime = f.stat().st_mtime
+            age = time.time() - mtime
+            if age > 90:
+                data['in_progress'] = False
+                data['phase'] = 'stale'
+                data['stale_seconds'] = round(age)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"in_progress": False, "phase": "error", "error": str(e)})
 
 
 @app.route('/api/cache-status')

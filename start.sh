@@ -1,5 +1,6 @@
 #!/bin/bash
 cd "$(dirname "$0")"
+KIOSK_DIR="$(pwd)"
 
 LOG_PREFIX="[$(date '+%H:%M:%S')]"
 
@@ -22,19 +23,7 @@ echo "$LOG_PREFIX ✓ Python: $($PY --version 2>&1)"
 echo "$LOG_PREFIX 📦 Устанавливаем зависимости..."
 $PY -m pip install flask flask-cors requests beautifulsoup4 --quiet 2>/dev/null
 
-# ── Автосохранение ВСЕГО расписания при запуске ──────────────────
-echo "$LOG_PREFIX 📡 Проверяем интернет..."
-if curl -s --max-time 5 "https://maiapp.lavafrai.ru/api/v1/groups" > /dev/null 2>&1; then
-  echo "$LOG_PREFIX ✓ Интернет есть — запускаем сохранение расписания в фоне..."
-  $PY cache_schedule.py --startup &
-  CACHE_PID=$!
-  echo "$LOG_PREFIX   (PID=$CACHE_PID, продолжает работать в фоне)"
-else
-  CACHE_PID=""
-  echo "$LOG_PREFIX ⚠ Интернет недоступен — работаем с кэшем"
-fi
-
-echo ""
+# ── Сервер первым делом — не ждём кэш! Юзер увидит стенд сразу ────
 echo "$LOG_PREFIX 🚀 Запускаем сервер..."
 $PY server.py &
 SERVER_PID=$!
@@ -45,8 +34,26 @@ if ! kill -0 $SERVER_PID 2>/dev/null; then
   exit 1
 fi
 
-# AFK-заставка теперь живёт прямо в браузере (mai_kiosk.html → <video>).
-# Старый afk-video.sh / mpv / xprintidle больше не используются.
+# ── Автосохранение расписания — параллельно в фоне ─────────────────
+# Прогресс пишется в schedule_cache/_progress.json, фронт читает и показывает
+# плашку «обновляем расписание» в правом нижнем углу — стенд при этом полностью
+# юзабелен через онлайн-API.
+CACHE_PID=""
+if [ -f "$KIOSK_DIR/.wifi_creds" ] && [ -f "$KIOSK_DIR/wifi_schedule_update.py" ]; then
+  echo "$LOG_PREFIX 📡 Найден .wifi_creds — подключаемся к Wi-Fi и кэшируем (фоном)"
+  $PY "$KIOSK_DIR/wifi_schedule_update.py" --startup &
+  CACHE_PID=$!
+elif curl -s --max-time 5 "https://maiapp.lavafrai.ru/api/v1/groups" > /dev/null 2>&1; then
+  echo "$LOG_PREFIX 🌐 Интернет уже есть — кэшируем напрямую (фоном, 5 потоков)"
+  $PY cache_schedule.py --startup --parallel 5 &
+  CACHE_PID=$!
+else
+  echo "$LOG_PREFIX ⚠ Нет интернета и нет .wifi_creds — работаем с тем кэшем что есть"
+  echo "$LOG_PREFIX   для авто-Wi-Fi: $PY wifi_schedule_update.py --setup"
+fi
+[ -n "$CACHE_PID" ] && echo "$LOG_PREFIX   CACHE PID=$CACHE_PID (прогресс — в /api/cache-progress)"
+
+# AFK-заставка живёт в браузере (mai_kiosk.html → <video>).
 if [ -f "./on.mp4" ]; then
   echo "$LOG_PREFIX 🎬 AFK-видео: ./on.mp4 готово"
 else

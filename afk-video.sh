@@ -1,75 +1,92 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
 # afk-video.sh — AFK-заставка для сенсорного стенда (Lubuntu)
-#
-# Логика:
-#   • Следит за активностью через xprintidle (X11)
-#   • После 5 минут бездействия запускает on.mp4 в полный экран
-#   • При любом касании/движении — закрывает видео
-#
-# Запуск: добавляется автоматически из mai-kiosk.sh
+# Запускается из mai-kiosk.sh, не запускать вручную.
 # ═══════════════════════════════════════════════════════════════
 
 KIOSK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VIDEO="$KIOSK_DIR/on.mp4"
-IDLE_MS=300000       # 5 минут = 300 000 мс
-CHECK_SEC=10         # проверять каждые 10 секунд
+IDLE_THRESHOLD=60000    # 1 минута = 60 000 мс
+CHECK_SEC=5             # проверять каждые 5 секунд
 LOG="$KIOSK_DIR/kiosk.log"
-
-# ── Экспортируем X11-переменные (критично для Lubuntu/LXQt) ────
-# Без этого xprintidle и mpv не знают к какому дисплею обращаться
-export DISPLAY="${DISPLAY:-:0}"
-export XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}"
-
-# Если XAUTHORITY не существует — ищем по PID процесса X
-if [ ! -f "$XAUTHORITY" ]; then
-    XAUTH_FOUND=$(find /tmp -name '.Xauth*' -o -name 'xauth*' 2>/dev/null | head -1)
-    [ -n "$XAUTH_FOUND" ] && export XAUTHORITY="$XAUTH_FOUND"
-fi
 
 log() { echo "[$(date '+%H:%M:%S')] [AFK] $*" | tee -a "$LOG"; }
 
-# ── Проверка зависимостей ───────────────────────────────────────
-if ! command -v xprintidle &>/dev/null; then
-    log "Устанавливаем xprintidle..."
-    sudo apt-get install -y xprintidle -qq 2>/dev/null || {
-        log "ОШИБКА: не удалось установить xprintidle. Запусти: sudo apt install xprintidle"
-        exit 1
-    }
-fi
+# ── Находим активный X-дисплей ─────────────────────────────────
+# На Lubuntu при автозапуске DISPLAY может быть не задан
+find_display() {
+    # 1. Уже задан в окружении
+    [ -n "$DISPLAY" ] && echo "$DISPLAY" && return
 
-if ! command -v mpv &>/dev/null; then
-    log "Устанавливаем mpv..."
-    sudo apt-get install -y mpv -qq 2>/dev/null || {
-        log "ОШИБКА: не удалось установить mpv. Запусти: sudo apt install mpv"
-        exit 1
-    }
-fi
+    # 2. Смотрим в /tmp/.X*-lock (Xorg)
+    for lock in /tmp/.X*-lock; do
+        [ -f "$lock" ] || continue
+        num="${lock##*/tmp/.X}"
+        num="${num%-lock}"
+        echo ":${num}" && return
+    done
 
+    # 3. Спрашиваем у запущенного Xorg процесса
+    XPID=$(pgrep -x Xorg | head -1)
+    if [ -n "$XPID" ]; then
+        disp=$(cat /proc/"$XPID"/cmdline 2>/dev/null \
+               | tr '\0' '\n' | grep '^:[0-9]' | head -1)
+        [ -n "$disp" ] && echo "$disp" && return
+    fi
+
+    echo ":0"  # fallback
+}
+
+find_xauth() {
+    # Ищем актуальный Xauthority файл
+    [ -f "$HOME/.Xauthority" ] && echo "$HOME/.Xauthority" && return
+    # В /run или /tmp
+    find /tmp /run -maxdepth 3 -name '.Xauth*' -o -name 'xauth*' 2>/dev/null \
+        | head -1
+}
+
+export DISPLAY="$(find_display)"
+export XAUTHORITY="$(find_xauth)"
+
+log "Старт. DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY"
+
+# ── Зависимости ─────────────────────────────────────────────────
+check_dep() {
+    command -v "$1" &>/dev/null && return 0
+    log "Устанавливаем $1..."
+    DEBIAN_FRONTEND=noninteractive sudo apt-get install -y "$1" -qq 2>/dev/null
+    command -v "$1" &>/dev/null
+}
+
+check_dep xprintidle || { log "ОШИБКА: xprintidle не удалось установить"; exit 1; }
+check_dep mpv        || { log "ОШИБКА: mpv не удалось установить"; exit 1; }
+
+# ── Проверяем видеофайл ─────────────────────────────────────────
 if [ ! -f "$VIDEO" ]; then
-    log "Файл видео не найден: $VIDEO"
-    log "Создай файл on.mp4 в папке $KIOSK_DIR и перезапусти"
+    log "Файл on.mp4 не найден: $VIDEO"
+    log "Создай файл on.mp4 в папке $KIOSK_DIR"
     exit 1
 fi
 
-log "Запущен. Дисплей=$DISPLAY, порог=${IDLE_MS}мс ($(( IDLE_MS/60000 )) мин)"
+log "Готов. Порог бездействия: $((IDLE_THRESHOLD / 1000)) сек"
 
 MPV_PID=""
 
 # ── Основной цикл ───────────────────────────────────────────────
 while true; do
-    IDLE_MS_NOW=$(xprintidle 2>/dev/null || echo "0")
 
-    # Числовая проверка
-    if ! [[ "$IDLE_MS_NOW" =~ ^[0-9]+$ ]]; then
-        IDLE_MS_NOW=0
-    fi
+    # xprintidle требует DISPLAY
+    IDLE=$(DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" xprintidle 2>/dev/null)
 
-    if [ "$IDLE_MS_NOW" -ge "$IDLE_MS" ] && [ -z "$MPV_PID" ]; then
+    # Если не число — считаем 0 (безопасно)
+    [[ "$IDLE" =~ ^[0-9]+$ ]] || IDLE=0
+
+    if [ "$IDLE" -ge "$IDLE_THRESHOLD" ] && [ -z "$MPV_PID" ]; then
         # ── Запускаем видео ──────────────────────────────────────
-        log "AFK ${IDLE_MS_NOW}мс >= ${IDLE_MS}мс → запускаем видео"
+        log "Бездействие ${IDLE}мс ≥ ${IDLE_THRESHOLD}мс → запускаем видео"
 
-        DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" mpv \
+        DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" \
+        mpv \
             --fullscreen \
             --loop=inf \
             --no-osc \
@@ -77,36 +94,35 @@ while true; do
             --input-conf=/dev/null \
             --cursor-autohide=always \
             --stop-screensaver=yes \
-            --ontop \
-            --geometry=100%x100% \
+            --ontop=yes \
             "$VIDEO" \
             >> "$LOG" 2>&1 &
 
         MPV_PID=$!
-        log "mpv запущен PID=$MPV_PID"
+        log "mpv PID=$MPV_PID"
 
-    elif [ "$IDLE_MS_NOW" -lt "$IDLE_MS" ] && [ -n "$MPV_PID" ]; then
+    elif [ "$IDLE" -lt "$IDLE_THRESHOLD" ] && [ -n "$MPV_PID" ]; then
         # ── Активность — останавливаем видео ────────────────────
-        log "Активность (idle=${IDLE_MS_NOW}мс) → останавливаем видео PID=$MPV_PID"
+        log "Активность (idle=${IDLE}мс) → стоп видео PID=$MPV_PID"
         kill "$MPV_PID" 2>/dev/null
         wait "$MPV_PID" 2>/dev/null
         MPV_PID=""
 
         # Возвращаем фокус браузеру
-        sleep 0.5
+        sleep 0.3
         if command -v xdotool &>/dev/null; then
-            WIN=$(xdotool search --onlyvisible --class "chromium\|Chromium\|chrome\|Chrome" 2>/dev/null | head -1)
+            WIN=$(DISPLAY="$DISPLAY" xdotool search --onlyvisible \
+                    --classname "chromium\|Chromium\|chrome\|Chrome" 2>/dev/null | head -1)
             if [ -n "$WIN" ]; then
                 DISPLAY="$DISPLAY" xdotool windowactivate --sync "$WIN" 2>/dev/null
-                DISPLAY="$DISPLAY" xdotool windowfocus "$WIN" 2>/dev/null
-                log "Фокус возвращён браузеру (win=$WIN)"
+                log "Фокус → браузер (win=$WIN)"
             fi
         fi
     fi
 
-    # Проверяем что mpv ещё жив
+    # Mpv завершился сам (конец файла без loop или ошибка)
     if [ -n "$MPV_PID" ] && ! kill -0 "$MPV_PID" 2>/dev/null; then
-        log "mpv завершился сам (PID=$MPV_PID)"
+        log "mpv завершился (PID=$MPV_PID)"
         MPV_PID=""
     fi
 

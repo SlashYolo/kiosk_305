@@ -129,9 +129,9 @@ def _run_cache_blocking():
     if not cache_script.exists():
         log.error("cache_schedule.py не найден: %s", cache_script)
         return
-    log.info("Запускаем cache_schedule.py (блокирующе)...")
+    log.info("Запускаем cache_schedule.py --startup --parallel 5 ...")
     t0 = time.time()
-    r = subprocess.run([sys.executable, str(cache_script)], check=False)
+    r = subprocess.run([sys.executable, str(cache_script), '--startup', '--parallel', '5'], check=False)
     dt = time.time() - t0
     log.info("cache_schedule.py завершён за %.1f сек (exit=%s)", dt, r.returncode)
 

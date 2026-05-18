@@ -190,6 +190,15 @@ input,button,select{font-family:inherit;}
   font-size:13px;font-weight:600;color:var(--c-accent);
   background:var(--c-al);padding:3px 10px;border-radius:var(--r-f);
 }
+.lesson__group{
+  display:flex;align-items:center;gap:5px;
+  font-size:13px;font-weight:600;color:#7C3AED;
+  background:#F3E8FF;padding:3px 10px;border-radius:var(--r-f);
+}
+/* Кликабельные имена преподов / групп в расписании */
+.lesson__link{cursor:pointer;transition:opacity .15s, transform .1s;}
+.lesson__link:hover{opacity:.75;}
+.lesson__link:active{transform:scale(.96);}
 .lesson__room{
   display:flex;align-items:center;gap:5px;
   font-size:13px;color:var(--c-text2);font-weight:500;
@@ -254,14 +263,15 @@ input,button,select{font-family:inherit;}
 }
 .person-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.08);border-color:var(--c-bacc);}
 .avatar{
-  width:52px;height:52px;border-radius:50%;flex-shrink:0;
+  width:52px;height:68px;border-radius:14px;flex-shrink:0;
   background:var(--c-al);display:flex;align-items:center;justify-content:center;
   font-size:16px;font-weight:800;color:var(--c-accent);
 }
-/* Если у препода есть фото — рендерится как <img> со скруглённым квадратом */
+/* Фото — тот же размер, cover заполняет прямоугольник */
 img.avatar.avatar--photo{
   border-radius:14px;
   object-fit:cover;
+  object-position:top;   /* лицо обычно вверху кадра */
   background:var(--c-bg2);
   display:block;
 }
@@ -357,14 +367,14 @@ h1, h2 { text-wrap: balance; }
 .faq-a{max-height:0;overflow:hidden;transition:max-height .4s var(--ease-o),padding .3s;font-size:14px;color:var(--c-text2);line-height:1.7;padding:0 24px;}
 .faq-item.open .faq-a{max-height:200px;padding:0 24px 20px;}
 
-.kb-overlay{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;}
+.kb-overlay{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;overflow:hidden;}
 .kb-overlay.open{pointer-events:all;}
 .kb-backdrop{flex:1;background:rgba(0,0,0,0);transition:background .3s;}
 .kb-overlay.open .kb-backdrop{background:rgba(0,0,0,0.22);}
 /* Полоса подсказок */
-.kb-suggestions{display:flex;align-items:center;gap:8px;padding:0 14px;overflow-x:auto;overflow-y:hidden;background:rgba(240,243,248,0.97);border-top:1.5px solid var(--c-border);min-height:0;max-height:0;transition:max-height .25s var(--ease-o),padding .25s;scrollbar-width:none;}
+.kb-suggestions{display:flex;align-items:center;gap:8px;padding:0 14px;overflow-x:auto;overflow-y:hidden;background:rgba(240,243,248,0.97);min-height:0;max-height:0;transition:max-height .25s var(--ease-o),padding .25s;scrollbar-width:none;}
 .kb-suggestions::-webkit-scrollbar{display:none;}
-.kb-suggestions.has-items{max-height:72px;padding:10px 14px;}
+.kb-suggestions.has-items{max-height:72px;padding:10px 14px;border-top:1.5px solid var(--c-border);}
 .kb-suggestion-chip{display:flex;align-items:center;padding:10px 20px;background:white;border:1.5px solid var(--c-border);border-radius:var(--r-f);font-size:15px;font-weight:700;color:var(--c-text);white-space:nowrap;cursor:pointer;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.06);transition:background .15s,border-color .15s,transform .15s var(--ease-s);touch-action:manipulation;}
 .kb-suggestion-chip:active{background:var(--c-al);border-color:var(--c-bacc);color:var(--c-accent);transform:translateY(-2px);}
 
@@ -391,8 +401,35 @@ h1, h2 { text-wrap: balance; }
 }
 .kb-resize-handle:hover .kb-resize-hint{opacity:1;}
 
-.kb{background:#E2E6EC;border-radius:0;padding:10px 14px 28px;box-shadow:0 -8px 48px rgba(0,0,0,0);transform:translateY(100%);transition:transform .35s cubic-bezier(.34,1.1,.64,1),box-shadow .35s ease;user-select:none;overflow:hidden;}
-.kb-overlay.open .kb{transform:translateY(0);box-shadow:0 -8px 48px rgba(0,0,0,.2);}
+.kb{
+  background:#E2E6EC;border-radius:18px 18px 0 0;padding:10px 14px 28px;
+  /* Закрытое состояние: размыта, чуть мельче, прозрачная, сдвинута вниз */
+  opacity:0;
+  filter:blur(12px);
+  transform:translateY(28px) scale(0.97);
+  visibility:hidden;
+  /* Пружинный ease-out: значение "перелетает" за 1.0 и возвращается (bounce) */
+  transition:
+    opacity .35s ease,
+    filter .35s ease,
+    transform .4s cubic-bezier(.34,1.56,.64,1),
+    box-shadow .35s ease,
+    visibility 0s linear .4s;
+  user-select:none;overflow:hidden;
+}
+.kb-overlay.open .kb{
+  opacity:1;
+  filter:blur(0px);
+  transform:translateY(0) scale(1);
+  visibility:visible;
+  box-shadow:0 -8px 48px rgba(0,0,0,.2);
+  transition:
+    opacity .3s ease,
+    filter .3s ease,
+    transform .4s cubic-bezier(.34,1.56,.64,1),
+    box-shadow .35s ease,
+    visibility 0s linear 0s;
+}
 
 /* Масштабирование клавиш */
 .kb-rows{display:flex;flex-direction:column;gap:var(--kb-gap, 10px);}
@@ -453,6 +490,30 @@ h1, h2 { text-wrap: balance; }
   object-fit:cover;
   background:#000;
   display:block;
+}
+
+/* ── Плашка прогресса обновления кэша ──────────────────────────
+   Появляется в правом нижнем углу, когда cache_schedule.py
+   крутится в фоне. Не блокирует UI — только информирует. */
+.cache-banner{
+  position:fixed; right:20px; bottom:20px; z-index:400;
+  display:flex; flex-direction:column; gap:6px;
+  padding:14px 18px; min-width:260px; max-width:320px;
+  background:rgba(255,255,255,.97); backdrop-filter:blur(12px);
+  border:1.5px solid var(--c-border); border-radius:14px;
+  box-shadow:0 8px 32px rgba(0,0,0,.10);
+  opacity:0; transform:translateY(12px) scale(.96); pointer-events:none;
+  transition:opacity .35s ease, transform .35s var(--ease-o);
+}
+.cache-banner.show{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+.cache-banner__title{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--c-text);}
+.cache-banner__sub{font-size:11px; color:var(--c-text2); letter-spacing:.01em;}
+.cache-banner__bar{height:6px; background:var(--c-bg2); border-radius:6px; overflow:hidden; margin-top:4px;}
+.cache-banner__bar-fill{height:100%; background:linear-gradient(90deg, var(--c-accent), #4d9cff); border-radius:6px; transition:width .4s ease; width:0%;}
+.cache-banner__spin{
+  width:14px; height:14px; border:2px solid var(--c-border);
+  border-top-color:var(--c-accent); border-radius:50%;
+  animation:spin .8s linear infinite;
 }
 
 /* ── Модалка лаборатории (широкая) + карусель фото ───────────── */
@@ -802,7 +863,7 @@ h1, h2 { text-wrap: balance; }
           </div>
           <div class="card card--sm reveal rd3" style="border-left:4px solid #D97706;border-radius:0 var(--r-md) var(--r-md) 0;">
             <div style="font-weight:700;margin-bottom:6px;">Подробнее о поступлении</div>
-            <div style="font-size:13px;"><a style="color:var(--c-accent);font-weight:600;text-decoration:none;">priem.mai.ru</a></div>
+            <div style="font-size:13px;"><span style="color:var(--c-accent);font-weight:600;">priem.mai.ru</span></div>
           </div>
         </div>
       </div>
@@ -903,7 +964,77 @@ h1, h2 { text-wrap: balance; }
   </video>
 </div>
 
+<!-- ══ ПЛАШКА ПРОГРЕССА ОБНОВЛЕНИЯ КЭША ══ -->
+<div class="cache-banner" id="cacheBanner">
+  <div class="cache-banner__title">
+    <div class="cache-banner__spin"></div>
+    <span id="cacheBannerTitle">Обновляем расписание</span>
+  </div>
+  <div class="cache-banner__sub" id="cacheBannerSub">Подключение…</div>
+  <div class="cache-banner__bar"><div class="cache-banner__bar-fill" id="cacheBannerFill"></div></div>
+</div>
+
 <script>
+/* ══════════════════════════════════════════════════════════
+   KIOSK LOCKDOWN — блокировка всего что может увести фокус
+   ══════════════════════════════════════════════════════════
+   Должно идти ПЕРВЫМ в скрипте, до любой другой логики.
+   На дев-машине браузер всё равно может что-то открыть, но
+   на самом стенде (Chromium --kiosk + --block-new-web-contents)
+   эти оверрайды работают как страховка второго уровня.
+   ══════════════════════════════════════════════════════════ */
+(function kioskLockdown(){
+  // 1. window.open — никогда не открываем новые окна
+  window.open = function(){ console.warn('[lockdown] window.open заблокирован'); return null; };
+
+  // 2. Любой клик по <a> уходящей с локалхоста — отменяется
+  document.addEventListener('click', function(e){
+    const a = e.target && e.target.closest && e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    // Разрешаем: пустые, '#', javascript:, абсолютные на свой origin, относительные
+    if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('#')) return;
+    try {
+      const url = new URL(a.href, location.href);
+      if (url.origin === location.origin) return;     // свой localhost — ок
+    } catch(_) { /* malformed — отменяем */ }
+    e.preventDefault();
+    e.stopPropagation();
+    console.warn('[lockdown] внешняя ссылка заблокирована:', a.href);
+  }, true);
+
+  // 3. Средний клик и Ctrl/Shift-клик (открытие в новой вкладке) — отменяем
+  document.addEventListener('auxclick', function(e){
+    if (e.button === 1) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+
+  // 4. Контекстное меню (правая кнопка / долгое касание на тачскрине)
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); }, true);
+
+  // 5. Drag-and-drop файлов в окно (могло бы открыть файл)
+  ['dragover','drop','dragenter'].forEach(ev =>
+    document.addEventListener(ev, e => e.preventDefault(), true)
+  );
+
+  // 6. Запретить выбор/копирование текста (для тач-стенда не имеет смысла,
+  //    а на дев-машине можно убрать чтобы дебажить — закомментируй строку)
+  // document.addEventListener('selectstart', e => e.preventDefault(), true);
+
+  // 7. Сочетания, которыми Chromium может уйти со страницы
+  //    (Ctrl+L → адресная строка, Ctrl+T → новая вкладка, и т.д.)
+  //    В --kiosk режиме большинство уже не работают, но на дев-машине пригодится.
+  document.addEventListener('keydown', function(e){
+    const k = (e.key || '').toLowerCase();
+    if (e.ctrlKey && ['t','n','w','l','j','h','o','p','s','u'].includes(k)) {
+      // Пропускаем Ctrl+Shift+P — это наш шорткат showPanel
+      if (e.shiftKey && k === 'p') return;
+      e.preventDefault(); e.stopPropagation();
+    }
+    // F11 (fullscreen toggle) и F12 (devtools)
+    if (k === 'f11' || k === 'f12') { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+})();
+
 /* ══════════════════════════════════════════
    CONSTANTS
    ══════════════════════════════════════════ */
@@ -1206,11 +1337,24 @@ function showDropdown(q) {
 }
 
 function selectItem(name) {
+  clearTimeout(searchDebounce);        // ← убиваем отложенный showDropdown
   selectedName = name;
   document.getElementById('searchInput').value = name;
   document.getElementById('dropdown').style.display = 'none';
   currentWeek = 0;
   fetchSchedule(name);
+}
+
+/**
+ * Навигация из расписания: клик по преподу → его расписание, клик по группе → её расписание.
+ */
+function navigateToSchedule(name, type) {
+  setSearchType(type);
+  // Маленькая задержка чтобы UI-табы успели переключиться
+  setTimeout(() => {
+    selectItem(name);
+    document.getElementById('schedResult')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 50);
 }
 
 /* ══════════════════════════════════════════
@@ -1282,6 +1426,7 @@ function renderSchedule(fromCache = false) {
       const isCurrent = isToday && isCurrentLesson(l.time_start, l.time_end);
       const teachers = (l.lectors || []).map(lec => unwrap(lec.name, 'name')).filter(Boolean);
       const rooms    = (l.rooms   || []).map(r => typeof r === 'object' ? (r.name || '') : r).filter(Boolean);
+      const groups   = (l.groups  || []).map(g => typeof g === 'object' ? (g.name || unwrap(g, 'name') || '') : g).filter(Boolean);
       const ltype    = l.type || '';
       const typeCls  = LESSON_TYPES[ltype] || 'type-other';
 
@@ -1294,9 +1439,13 @@ function renderSchedule(fromCache = false) {
           <div class="lesson__body">
             <div class="lesson__name">${l.name || '—'}</div>
             <div class="lesson__meta">
-              ${teachers.map(t => `<div class="lesson__teacher">
+              ${teachers.map(t => `<div class="lesson__teacher lesson__link" onclick="navigateToSchedule('${t.replace(/'/g,"\\\\'")}', 'teacher')">
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                 ${t}
+              </div>`).join('')}
+              ${groups.map(g => `<div class="lesson__group lesson__link" onclick="navigateToSchedule('${g.replace(/'/g,"\\\\'")}', 'group')">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                ${g}
               </div>`).join('')}
               ${rooms.map(r => `<div class="lesson__room">
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
@@ -1584,6 +1733,9 @@ const FAQS = [
   { q: 'Какая программа обучения есть на кафедре 305?', a: 'Специалитет 24.05.06 «Управляющие, пилотажно-навигационные комплексы летательных аппаратов» — очная форма, 5.5 лет. Подробнее — на вкладке «Программы обучения».' },
   { q: 'Как связаться с кафедрой?', a: 'Контакты кафедры 305 — адрес, телефон и e-mail — указаны внизу вкладки «О кафедре».' },
   { q: 'Расписание не загружается — что делать?', a: 'Убедитесь, что стенд подключён к сети. Данные загружаются с сервера МАИ. Если сеть недоступна, стенд покажет последнее сохранённое расписание.' },
+  { q: '{Вопрос 1 — заполните}', a: '{Ответ на вопрос 1 — заполните}' },
+  { q: '{Вопрос 2 — заполните}', a: '{Ответ на вопрос 2 — заполните}' },
+  { q: '{Вопрос 3 — заполните}', a: '{Ответ на вопрос 3 — заполните}' },
 ];
 
 
@@ -1627,27 +1779,49 @@ const TEACHERS_305_NAMES = TEACHERS_305.map(t => t.name.toLowerCase());
    Поддерживаются jpg, png, webp.
    ══════════════════════════════════════════ */
 const TEACHER_PHOTOS = {
-  // По GUID (надёжнее):
-  'b0062582-1d99-11e0-9baf-1c6f65450efa': 'aleshin.jpg',     // Алешин Б.С.
-  // 'b0062590-1d99-11e0-9baf-1c6f65450efa': 'afonin.jpg',      // Афонин А.А.
-  // 'eb7d5e30-1d99-11e0-9baf-1c6f65450efa': 'antonov.jpg',     // Антонов Д.А.
-
-  // По имени (если GUID лень искать):
-  // 'Алешин Борис Сергеевич': 'aleshin.jpg',
+  // По GUID. Просто положи jpg/png/webp с этим именем в avatars_teachers/
+  // и фотка подцепится. Если файла нет — покажется кружок с инициалами.
+  // Имена выбраны транслитерацией фамилии, можешь переименовать как удобнее
+  // (только не забудь поменять и здесь, и файл в папке).
+  'b0062582-1d99-11e0-9baf-1c6f65450efa': 'aleshin.jpg',         // Алешин Б.С.
+  'b0062590-1d99-11e0-9baf-1c6f65450efa': 'afonin.jpg',          // Афонин А.А.
+  '8062e196-1d99-11e0-9baf-1c6f65450efa': 'veremeenko.jpg',      // Веремеенко К.К.
+  '578c17f8-1d99-11e0-9baf-1c6f65450efa': 'koshelev.jpg',        // Кошелев Б.В.
+  'eb7d5e30-1d99-11e0-9baf-1c6f65450efa': 'antonov.jpg',         // Антонов Д.А.
+  '05816da9-3656-11e3-9343-3cd92bf20bfe': 'nguyen.jpg',          // Нгуен Ныы Ман
+  'e4a9bc9c-1d99-11e0-9baf-1c6f65450efa': 'surkov.jpg',          // Сурков Д.А.
+  'f253618c-1d99-11e0-9baf-1c6f65450efa': 'zharkov.jpg',         // Жарков М.В.
+  '28e11301-1d9b-11e0-9baf-1c6f65450efa': 'kuznetsov.jpg',       // Кузнецов И.М.
+  '95d76d89-77f8-11e1-86e1-00304866c649': 'lelkov.jpg',          // Лельков К.С.
+  '1847ff04-03c3-11e2-9a50-3cd92bf20bff': 'mishin.jpg',          // Мишин Ю.Н.
+  '2f38b9d1-1d9b-11e0-9baf-1c6f65450efa': 'petruhin.jpg',        // Петрухин В.А.
+  'd6097880-1d9a-11e0-9baf-1c6f65450efa': 'pronkin.jpg',         // Пронькин А.Н.
+  'ae2912f4-a1e8-11e7-b412-485b3919ee6d': 'ryabinkin.jpg',       // Рябинкин М.С.
+  '2aee59b5-f63c-11e9-9246-485b3919ee6d': 'savkin.jpg',          // Савкин А.В.
+  '90d920a5-1d9a-11e0-9baf-1c6f65450efa': 'ushakov.jpg',         // Ушаков А.Н.
+  '2f38b9ce-1d9b-11e0-9baf-1c6f65450efa': 'horev.jpg',           // Хорев Т.С.
+  '0e0fb874-4055-11e7-b024-3cd92bf20bfe': 'kolganov.jpg',        // Колганов Л.А.
+  'd4a78fa7-5606-11ed-bbea-ac1f6b64c5eb': 'kalinina.jpg',        // Калинина О.И.
+  '0ad2ae84-0f4d-11ee-bc01-3cecef1c132f': 'matyushenko.jpg',     // Матюшенко Р.В.
+  '1b1b73fa-2e23-11ef-bc19-3cecef1c132f': 'rychkov.jpg',         // Рычков А.С.
+  '5ab9e990-9147-11ef-bc24-3cecef1c132f': 'uchaeva.jpg',         // Учаева Е.А.
 };
 
 // Фолбэк-функция вызывается из onerror у <img>, заменяет битую картинку на кружок с инициалами
 function _avatarFallback(img, initials, color, textColor) {
   const div = document.createElement('div');
   div.className = 'avatar';
-  div.style.cssText = `width:${img.style.width||'52px'};height:${img.style.height||'52px'};background:${color};color:${textColor};font-size:${img.dataset.font||'15px'};font-weight:800;`;
+  const w = img.style.width  || '52px';
+  const h = img.style.height || '68px';
+  div.style.cssText = `width:${w};height:${h};background:${color};color:${textColor};font-size:${img.dataset.font||'15px'};font-weight:800;display:flex;align-items:center;justify-content:center;border-radius:14px;`;
   div.textContent = initials;
   img.replaceWith(div);
 }
 
 function avatarHTML(t, colorIdx, opts = {}) {
-  const size  = opts.size || 52;
-  const font  = opts.font || '15px';
+  const w     = opts.width  || 52;
+  const h     = opts.height || 68;
+  const font  = opts.font   || '15px';
   const photo = TEACHER_PHOTOS[t.guid] || TEACHER_PHOTOS[t.name];
   const initials = getInitials(t.name);
   const color = AVATAR_COLORS[colorIdx];
@@ -1655,13 +1829,13 @@ function avatarHTML(t, colorIdx, opts = {}) {
   if (photo) {
     const escName = t.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     return `<img class="avatar avatar--photo"
-                 style="width:${size}px;height:${size}px;"
+                 style="width:${w}px;height:${h}px;"
                  data-font="${font}"
                  src="/avatars_teachers/${photo}"
                  alt="${escName}"
                  onerror="_avatarFallback(this, '${initials}', '${color}', '${textColor}')">`;
   }
-  return `<div class="avatar" style="width:${size}px;height:${size}px;background:${color};color:${textColor};font-size:${font};">${initials}</div>`;
+  return `<div class="avatar" style="width:${w}px;height:${h}px;background:${color};color:${textColor};font-size:${font};">${initials}</div>`;
 }
 
 function getInitials(name) {
@@ -1684,7 +1858,7 @@ function buildTeachers305() {
     card.className = 'person-card';
     card.style.cursor = 'pointer';
     card.innerHTML = `
-      ${avatarHTML(t, ci, { size: 52, font: '15px' })}
+      ${avatarHTML(t, ci)}
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:15px;line-height:1.3;">${t.name}</div>
         <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">${roleLabel}${t.degree ? ' · ' + t.degree : ''}</div>
@@ -1745,7 +1919,7 @@ function openTeacherModal(t) {
 
         <!-- Шапка -->
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-shrink:0;">
-          ${avatarHTML(t, ci, { size: 60, font: '19px' })}
+          ${avatarHTML(t, ci, { width: 60, height: 78, font: '19px' })}
           <div>
             <div style="font-size:1.25rem;font-weight:800;letter-spacing:-.02em;line-height:1.2;">${t.name}</div>
             <div style="font-size:13px;color:var(--c-text2);margin-top:4px;">${t.role}${t.degree ? ' · ' + t.degree : ''}${t.title ? ' · ' + t.title : ''}</div>
@@ -2035,6 +2209,89 @@ document.getElementById('afkVideo')?.addEventListener('error', () => {
   console.warn('[AFK] видео не загружено (нет on.mp4 или битый кодек) — заставка отключена');
 });
 
+/* ══════════════════════════════════════════
+   ПОЛЛИНГ ПРОГРЕССА КЭША
+   ══════════════════════════════════════════
+   cache_schedule.py пишет _progress.json, сервер отдаёт /api/cache-progress.
+   Раз в 3 секунды проверяем, и пока обновление идёт — показываем плашку.
+   ══════════════════════════════════════════ */
+const CACHE_POLL_MS = 3000;
+let _cacheBannerWasShown = false;
+let _cacheLastChange = Date.now();   // когда прогресс последний раз менялся
+let _cacheLastValue  = '';           // строковый слепок для обнаружения зависания
+
+async function pollCacheProgress(){
+  try {
+    const r = await fetch(`${API}/cache-progress`, { cache: 'no-store' });
+    if (!r.ok) return;
+    const p = await r.json();
+    const banner = document.getElementById('cacheBanner');
+    const title  = document.getElementById('cacheBannerTitle');
+    const sub    = document.getElementById('cacheBannerSub');
+    const fill   = document.getElementById('cacheBannerFill');
+    if (!banner) return;
+
+    if (!p.in_progress) {
+      // Если шло, а потом завершилось — покажем "Готово" на 4 сек
+      if (_cacheBannerWasShown && (p.phase === 'done' || p.phase === 'stale' || p.phase === 'aborted')) {
+        title.textContent = p.phase === 'stale' ? 'Обновление прервано' : 'Расписание обновлено';
+        const total = (p.groups?.saved||0) + (p.teachers?.saved||0) + (p.pubs?.saved||0);
+        const skip  = (p.groups?.skipped||0) + (p.teachers?.skipped||0) + (p.pubs?.skipped||0);
+        sub.textContent = `Обновлено: ${total}, без изменений: ${skip}`;
+        fill.style.width = '100%';
+        banner.querySelector('.cache-banner__spin').style.display = 'none';
+        setTimeout(() => banner.classList.remove('show'), 4000);
+        _cacheBannerWasShown = false;
+      } else {
+        banner.classList.remove('show');
+      }
+      return;
+    }
+
+    // Идёт обновление — обновляем плашку
+    _cacheBannerWasShown = true;
+    const phaseLabel = {
+      'init':     'Подключение к серверу МАИ…',
+      'groups':   'Сохраняем расписание групп',
+      'teachers': 'Сохраняем расписание преподавателей',
+      'pubs':     'Сохраняем публикации',
+      'done':     'Готово',
+    }[p.phase] || 'Обновление…';
+    title.textContent = phaseLabel;
+
+    const active = p[p.phase] || {current:0, total:0};
+
+    // Клиентская проверка на зависание: если значения не меняются 90 сек — прячем
+    const snapshot = `${p.phase}:${active.current}`;
+    if (snapshot !== _cacheLastValue) {
+      _cacheLastValue  = snapshot;
+      _cacheLastChange = Date.now();
+    } else if (Date.now() - _cacheLastChange > 90000) {
+      banner.classList.remove('show');
+      _cacheBannerWasShown = false;
+      console.warn('[Cache] Прогресс не менялся 90с — прячем баннер');
+      return;
+    }
+
+    if (active.total > 0) {
+      const pct = Math.round(100 * active.current / active.total);
+      fill.style.width = pct + '%';
+      const skip = active.skipped ? `, без изменений: ${active.skipped}` : '';
+      sub.textContent = `${active.current} из ${active.total} (${pct}%)${skip}`;
+    } else {
+      fill.style.width = '0%';
+      sub.textContent = 'Загружаем список…';
+    }
+    banner.classList.add('show');
+  } catch(e) {
+    // Сеть отвалилась — просто прячем
+    document.getElementById('cacheBanner')?.classList.remove('show');
+  }
+}
+setInterval(pollCacheProgress, CACHE_POLL_MS);
+// Первый запрос — сразу, чтобы плашка появилась сразу если кэш уже идёт
+pollCacheProgress();
+
 /* ── fetchSchedule с автоматическим fallback на кэш ── */
 async function fetchSchedule(name) {
   const container = document.getElementById('schedResult');
@@ -2129,8 +2386,8 @@ function kbUpdateSuggestions() {
    Чтобы отключить — поставь enabled: false
    ═══════════════════════════════════════════════
    1. toggleKeyboard:  Shift → Tab → Space
-   2. exitApp:         Ctrl+Shift+Alt+A+E
-   3. exitFullscreen:  Ctrl+Shift+Alt+F
+   2. exitApp:         Ctrl+Q
+   3. showPanel:       Ctrl+Shift+P — показать панель задач (можно свернуть/закрыть)
    4. closeModal:      Escape
    ═══════════════════════════════════════════════ */
 
@@ -2152,14 +2409,16 @@ const SHORTCUTS = [
     check:(e) => e.ctrlKey && !e.shiftKey && !e.altKey && (e.key==="q"||e.key==="Q"),
     action:(e) => { e.preventDefault(); document.getElementById("exitToast").classList.add("show"); } },
 
-  // 3. Выход из полноэкранного режима (через сервер → xdotool F11 на уровне ОС)
-  { id:"exitFullscreen", enabled:true, type:"combo",
-    check:(e) => e.ctrlKey&&e.shiftKey&&e.altKey&&(e.key==="f"||e.key==="F"),
-    action:() => {
-      fetch(`${API}/fullscreen-exit`, {method:'POST'})
+  // 3. Показать панель задач LXQt — чтобы свернуть/закрыть через системный UI.
+  //    Ctrl+Shift+P (P = Panel). Через панель можно свернуть окно или запустить другое.
+  { id:"showPanel", enabled:true, type:"combo",
+    check:(e) => e.ctrlKey && e.shiftKey && !e.altKey && (e.key==="p"||e.key==="P"||e.key==="з"||e.key==="З"),
+    action:(e) => {
+      e.preventDefault();
+      fetch(`${API}/show-panel`, {method:'POST'})
         .then(r=>r.json())
-        .then(d => toast(d.ok ? "🖥️" : "⚠️",
-                         d.ok ? `Полноэкранный режим отключён (${d.method})` : `Не удалось: ${JSON.stringify(d.tried)}`))
+        .then(d => toast(d.ok ? "📌" : "⚠️",
+                         d.ok ? 'Панель разблокирована — можно свернуть окно' : `Не удалось: ${JSON.stringify(d.tried)}`))
         .catch(e => toast("❌", "Ошибка: " + e.message));
     } },
 
