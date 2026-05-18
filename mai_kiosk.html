@@ -48,7 +48,7 @@ input,button,select{font-family:inherit;}
 
 /* ── LAYOUT ── */
 .app{display:flex;flex-direction:column;min-height:100vh;}
-.page{display:none;flex:1;animation:fadeInUp .5s var(--ease-o) both;}
+.page{display:none;flex:1;animation:fadeIn .3s ease-out both;}
 .page.active{display:flex;flex-direction:column;}
 
 /* ── NAV ── */
@@ -1195,29 +1195,58 @@ function formatDayLabel(dateRaw) {
 }
 
 /* ══════════════════════════════════════════
-   SEARCH TYPE
+   SEARCH TYPE — с сохранением состояния при переключении
    ══════════════════════════════════════════ */
+// Сохраняем ввод/расписание отдельно для каждого типа
+const _typeState = {
+  group:   { input: '', name: '', schedule: null, week: 0, html: '' },
+  teacher: { input: '', name: '', schedule: null, week: 0, html: '' },
+  room:    { input: '', name: '', schedule: null, week: 0, html: '' },
+};
+
+function _saveTypeState() {
+  const s = _typeState[searchType];
+  s.input    = document.getElementById('searchInput').value;
+  s.name     = selectedName;
+  s.schedule = currentSchedule;
+  s.week     = currentWeek;
+  s.html     = document.getElementById('schedResult').innerHTML;
+}
+
+function _restoreTypeState(type) {
+  const s = _typeState[type];
+  const inp = document.getElementById('searchInput');
+  inp.value       = s.input;
+  selectedName    = s.name;
+  currentSchedule = s.schedule;
+  currentWeek     = s.week;
+  document.getElementById('schedResult').innerHTML = s.html;
+}
+
 function setSearchType(type) {
+  if (type === searchType) return; // уже на этом типе
+  // Сохраняем текущий ввод и расписание
+  _saveTypeState();
+
   searchType = type;
   document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + type).classList.add('active');
   const inp = document.getElementById('searchInput');
   const placeholders = { group: 'Введите название группы...', teacher: 'Введите ФИО преподавателя...', room: 'Введите номер аудитории (напр. 3-254)...' };
   inp.placeholder = placeholders[type];
-  inp.value = '';
   document.getElementById('dropdown').style.display = 'none';
-  document.getElementById('schedResult').innerHTML = '';
-  selectedName = '';
-  currentSchedule = null;
+
+  // Восстанавливаем предыдущее состояние этого типа
+  _restoreTypeState(type);
 
   if (type === 'group') {
     if (allGroups.length === 0) loadGroups();
-    else setHint(`✓ Загружено ${allGroups.length} групп — начните вводить название`, true);
+    else if (!selectedName) setHint(`✓ Загружено ${allGroups.length} групп — начните вводить название`, true);
   } else if (type === 'teacher') {
     if (allTeachers.length === 0) loadTeachers();
-    else setHint(`✓ Загружено ${allTeachers.length} преподавателей — начните вводить ФИО`, true);
+    else if (!selectedName) setHint(`✓ Загружено ${allTeachers.length} преподавателей — начните вводить ФИО`, true);
   } else {
-    setHint('Введите номер аудитории, например: 3-254, 3-101');
+    if (!selectedName) setHint('Введите номер аудитории, например: 3-254, 3-101');
   }
 }
 

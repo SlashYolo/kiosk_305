@@ -214,14 +214,20 @@ def teachers():
 
 @app.route('/api/schedule/<path:name>')
 def schedule(name):
-    data, code = fetch_api(f'/schedule/{quote(name, safe="")}')
-    if data is not None:
-        write_disk_cache(name, data)
-        return jsonify(data), code
+    """Cache-first: если расписание уже на диске — отдаём мгновенно.
+    Идём в внешний API только если кэша нет. Кэш обновляется фоново через cache_schedule.py."""
+    # 1. Disk cache → мгновенный ответ
     for etype in ('group', 'teacher'):
         cached, ok = read_disk_cache(etype, name)
         if ok and cached is not None:
             return jsonify(cached)
+
+    # 2. Нет кэша → идём в API МАИ
+    data, code = fetch_api(f'/schedule/{quote(name, safe="")}')
+    if data is not None:
+        write_disk_cache(name, data)
+        return jsonify(data), code
+
     return jsonify({"error": f"Расписание для '{name}' недоступно"}), 404
 
 
