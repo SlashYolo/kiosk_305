@@ -38,7 +38,7 @@
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth;}
-body{background:var(--c-bg);color:var(--c-text);font-family:'Manrope',system-ui,sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden;padding-bottom:80px;}
+body{background:var(--c-bg);color:var(--c-text);font-family:'Manrope',system-ui,sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden;padding-bottom:96px;}
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--c-border);border-radius:99px;}
@@ -521,12 +521,13 @@ h1, h2 { text-wrap: balance; }
 
 /* ── Нижний бар новостей МАИ ─────────────────────────────────── */
 .news-bar{
-  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  position:fixed;bottom:10px;left:10px;right:10px;z-index:100;
   background:var(--c-accent);
   height:72px;
   display:flex;align-items:center;
   overflow:hidden;
-  box-shadow:0 -4px 24px rgba(0,0,0,.15);
+  border-radius:18px;
+  box-shadow:0 4px 24px rgba(0,0,0,.2), 0 0 0 1px rgba(255,255,255,.08) inset;
   user-select:none;touch-action:pan-y;
 }
 .news-bar:empty{display:none;}
@@ -534,10 +535,11 @@ h1, h2 { text-wrap: balance; }
   display:flex;
   transition:transform .5s cubic-bezier(.4,0,.2,1);
   height:100%;
+  width:100%;
 }
 .news-bar__item{
   display:flex;align-items:center;gap:14px;
-  min-width:100vw;
+  min-width:100%;flex-shrink:0;
   padding:0 24px;
   box-sizing:border-box;
   color:white;
@@ -2443,7 +2445,7 @@ pollCacheProgress();
   function goTo(i){
     newsIdx = ((i % newsCount) + newsCount) % newsCount;
     const track = document.getElementById('newsTrack');
-    if (track) track.style.transform = `translateX(-${newsIdx * 100}vw)`;
+    if (track) track.style.transform = `translateX(-${newsIdx * 100}%)`;
     bar.querySelectorAll('.news-bar__dot').forEach((d, k) => d.classList.toggle('active', k === newsIdx));
   }
 
