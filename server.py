@@ -3,7 +3,7 @@ MAI Kiosk — локальный прокси-сервер v3
 ========================================
 Запуск: python3 server.py   →   http://localhost:8765
 """
-import sys, os, json, logging, time, re
+import sys, os, json, logging, time, re, threading
 from pathlib import Path
 from urllib.parse import quote
 
@@ -81,10 +81,27 @@ def write_disk_cache(name: str, data: dict):
     except Exception as e:
         log.warning("Cache write error: %s", e)
 
+def iter_cache_names(etype: str) -> list:
+    """Быстрый список имён из кэша — по именам файлов, без чтения содержимого.
+    group_М3О-505С-21.json → 'М3О-505С-21'
+    teacher_Иванов_Иван_Иванович.json → 'Иванов Иван Иванович'"""
+    prefix = f"{etype}_"
+    names = []
+    for path in sorted(CACHE.glob(f"{prefix}*.json")):
+        if path.name.startswith('_'):
+            continue
+        raw = path.stem[len(prefix):]   # убираем 'group_' / 'teacher_'
+        name = raw.replace('_', ' ')    # safe_filename заменял пробелы на _
+        if name:
+            names.append(name)
+    return names
+
+
 def iter_cache_index(etype: str):
+    """Полный индекс с метаданными (медленнее, читает файлы). Для cache-names endpoint."""
     prefix = f"{etype}_" if etype else ""
     for path in sorted(CACHE.glob(f"{prefix}*.json")):
-        if path.name == 'last_update.json':
+        if path.name.startswith('_'):
             continue
         try:
             d = json.loads(path.read_text(encoding='utf-8'))
@@ -192,24 +209,178 @@ def parse_pubs(html_text: str) -> list:
     pubs.sort(key=lambda p: p['year'] or 0, reverse=True)
     return pubs
 
+# ── Новости МАИ ───────────────────────────────────────────────────
+NEWS_DIR  = KIOSK_DIR / 'news_cache'
+NEWS_FILE = NEWS_DIR / '_news.json'
+NEWS_DIR.mkdir(exist_ok=True)
+_news_lock = threading.Lock()
+
+def scrape_news(count=5):
+    """Скрапит последние `count` новостей с mai.ru/press/news/.
+    Селекторы подогнаны под реальную вёрстку Bitrix CMS сайта МАИ (май 2026)."""
+    import re as _re
+    from bs4 import BeautifulSoup
+
+    url = 'https://mai.ru/press/news/'
+    try:
+        r = HTML_SES.get(url, timeout=15)
+        r.raise_for_status()
+        r.encoding = r.apparent_encoding or 'utf-8'
+        html = r.text
+        log.info("News page fetched: %d bytes", len(html))
+    except Exception as e:
+        log.warning("News fetch failed: %s", e)
+        return []
+
+    soup = BeautifulSoup(html, 'html.parser')
+    items = []
+
+    # Карточки: <a class="card ... card-transition" href="detail.php?ID=...">
+    cards = soup.select('a.card-transition[href*="detail.php"]')
+    log.info("News: found %d card-transition links", len(cards))
+
+    # Фолбэк: если CSS-селектор не сработал, пробуем любые ссылки на detail.php
+    if not cards:
+        cards = soup.find_all('a', href=_re.compile(r'detail\.php\?ID='))
+        log.info("News fallback: found %d detail.php links", len(cards))
+
+    for card in cards[:count]:
+        try:
+            href = card.get('href', '')
+            if not href:
+                continue
+            # Относительные ссылки → абсолютные
+            if not href.startswith('http'):
+                href = 'https://mai.ru/press/news/' + href
+
+            # Картинка: <img class="card-img-top" src="...">
+            img_url = ''
+            img_el = card.select_one('img.card-img-top') or card.find('img', src=True)
+            if img_el:
+                img_url = img_el.get('src') or img_el.get('data-src', '')
+                if img_url and not img_url.startswith('http'):
+                    img_url = 'https://mai.ru' + img_url
+
+            # Дата: <span class="badge bg-primary ...">19 мая</span>
+            date_str = ''
+            date_el = card.select_one('.badge.bg-primary') or card.select_one('.card-pinned-top-end .badge')
+            if date_el:
+                date_str = date_el.get_text(strip=True)
+
+            # Заголовок: <h5> внутри .card-body
+            title = ''
+            h = card.select_one('.card-body h5') or card.find(['h3', 'h4', 'h5', 'h6'])
+            if h:
+                title = h.get_text(strip=True)
+            if not title:
+                title = card.get_text(strip=True)[:200]
+            if not title or len(title) < 5:
+                continue
+
+            items.append({
+                'title':    title[:200],
+                'url':      href,
+                'date':     date_str,
+                'img_url':  img_url,
+                'img_file': '',
+            })
+        except Exception as e:
+            log.warning("News card parse error: %s", e)
+            continue
+
+    log.info("News: parsed %d items", len(items))
+
+    if not items:
+        log.warning("News: 0 items! Saving FULL debug HTML to news_cache/_debug.html")
+        (NEWS_DIR / '_debug.html').write_text(html[:100000], encoding='utf-8')
+        return []
+
+    # Скачиваем картинки
+    for i, item in enumerate(items):
+        fname = f"news_{i+1}.jpg"
+        item['img_file'] = fname
+        if item['img_url']:
+            try:
+                ir = HTML_SES.get(item['img_url'], timeout=10)
+                ir.raise_for_status()
+                (NEWS_DIR / fname).write_bytes(ir.content)
+            except Exception as e:
+                log.warning("News img %d: %s", i+1, e)
+                item['img_file'] = ''
+
+    # Удаляем старые файлы
+    keep = {it['img_file'] for it in items if it['img_file']}
+    keep.update({'_news.json', '_debug.html'})
+    for f in NEWS_DIR.iterdir():
+        if f.name not in keep:
+            try: f.unlink()
+            except: pass
+
+    NEWS_FILE.write_text(
+        json.dumps({'items': items, 'ts': time.time()}, ensure_ascii=False),
+        encoding='utf-8'
+    )
+    log.info("News saved: %d items (%d with images)", len(items), sum(1 for it in items if it['img_file']))
+    return items
+
+_news_refreshing = False
+
+def _refresh_news_bg():
+    """Фоновый поток — не блокирует ответ API. Не спавнит дубли."""
+    global _news_refreshing
+    if _news_refreshing:
+        return
+    def _do():
+        global _news_refreshing
+        _news_refreshing = True
+        try:
+            with _news_lock:
+                scrape_news()
+        finally:
+            _news_refreshing = False
+    threading.Thread(target=_do, daemon=True).start()
+
+
+def get_cached_news():
+    """Всегда мгновенный ответ. Если кэша нет, пуст, или стал — обновляем в фоне."""
+    if NEWS_FILE.exists():
+        try:
+            data = json.loads(NEWS_FILE.read_text(encoding='utf-8'))
+            items = data.get('items', [])
+            age = time.time() - data.get('ts', 0)
+            if not items or age > 3 * 3600:
+                _refresh_news_bg()  # пусто или протухло — обновляем в фоне
+            return items
+        except Exception:
+            pass
+    _refresh_news_bg()
+    return []
+
 # ── Эндпоинты ────────────────────────────────────────────────────
 
 @app.route('/api/groups')
 def groups():
+    """Cache-first: если кэш есть — возвращаем только группы с реальным расписанием.
+    Если кэш пуст — идём в API МАИ (полный список, включая группы без расписания)."""
+    cached = iter_cache_names('group')
+    if cached:
+        return jsonify(cached)
     data, code = fetch_api('/groups')
     if data is not None:
         return jsonify(data), code
-    names = [f['name'] for f in iter_cache_index('group')]
-    return jsonify(names) if names else (jsonify({"error": "unavailable"}), 502)
+    return jsonify({"error": "unavailable"}), 502
 
 
 @app.route('/api/teachers')
 def teachers():
+    """Cache-first: если кэш есть — только преподы с расписанием."""
+    cached = iter_cache_names('teacher')
+    if cached:
+        return jsonify(cached)
     data, code = fetch_api('/teachers')
     if data is not None:
         return jsonify(data), code
-    names = [f['name'] for f in iter_cache_index('teacher')]
-    return jsonify(names) if names else (jsonify({"error": "unavailable"}), 502)
+    return jsonify({"error": "unavailable"}), 502
 
 
 @app.route('/api/schedule/<path:name>')
@@ -410,6 +581,21 @@ def cache_progress():
         return jsonify({"in_progress": False, "phase": "error", "error": str(e)})
 
 
+@app.route('/api/news')
+def news():
+    """5 последних новостей МАИ (кэшируются на 3 часа)."""
+    items = get_cached_news()
+    return jsonify(items)
+
+
+@app.route('/news-img/<path:filename>')
+def news_img(filename):
+    """Кэшированные картинки новостей."""
+    if not (NEWS_DIR / filename).exists():
+        return '', 404
+    return send_from_directory(str(NEWS_DIR), filename, conditional=True)
+
+
 @app.route('/api/cache-status')
 def cache_status():
     f = CACHE / 'last_update.json'
@@ -437,6 +623,18 @@ def afk_video():
     if not f.exists():
         return jsonify({"error": "on.mp4 not found"}), 404
     return send_from_directory(str(KIOSK_DIR), 'on.mp4', conditional=True)
+
+
+@app.route('/logo.png')
+@app.route('/logo.svg')
+@app.route('/logo.webp')
+def logo():
+    """Иконка/логотип в навбаре. Поддерживает png, svg, webp."""
+    for ext in ('png', 'svg', 'webp'):
+        f = KIOSK_DIR / f'logo.{ext}'
+        if f.exists():
+            return send_from_directory(str(KIOSK_DIR), f'logo.{ext}', conditional=True)
+    return '', 404
 
 
 @app.route('/lab-photos/<path:filename>')

@@ -134,7 +134,8 @@ def _strip_noise(obj):
 def fetch_and_save(entity_type: str, name: str, session: requests.Session, retries: int = 2) -> str:
     """
     Возвращает: 'saved' | 'skipped' | 'failed'.
-    'skipped' = ответ совпал с сохранённым по хэшу.
+    Хэш считается от СЫРЫХ байтов HTTP-ответа — без парсинга JSON.
+    При совпадении хэша: ни парсинг, ни запись не происходят (макс. скорость).
     """
     for attempt in range(retries + 1):
         if _stop.is_set():
@@ -143,27 +144,30 @@ def fetch_and_save(entity_type: str, name: str, session: requests.Session, retri
             url = f"{API}/schedule/{quote(name, safe='')}"
             r = session.get(url, timeout=15)
             r.raise_for_status()
-            data = r.json()
+
+            # Хэш сырых байтов — без JSON-парсинга
+            raw_hash = hashlib.sha1(r.content).hexdigest()
 
             filename = f"{entity_type}_{safe_filename(name)}.json"
             path = CACHE_DIR / filename
-            new_hash = data_hash(data)
 
-            # Инкрементально
+            # Быстрая проверка: ищем хэш в начале файла (там поле "hash" первое)
             if path.exists():
                 try:
-                    old = json.loads(path.read_text(encoding='utf-8'))
-                    if old.get('hash') == new_hash:
+                    head = path.read_bytes()[:300]
+                    if raw_hash.encode() in head:
                         return 'skipped'
                 except Exception:
-                    pass  # битый файл — перезапишем
+                    pass
 
+            # Хэш не совпал — парсим и сохраняем
+            data = r.json()
             path.write_text(
                 json.dumps({
+                    'hash':    raw_hash,
                     'type':    entity_type,
                     'name':    name,
                     'data':    data,
-                    'hash':    new_hash,
                     'ts':      time.time(),
                     'updated': datetime.now().isoformat(),
                 }, ensure_ascii=False),
@@ -172,7 +176,7 @@ def fetch_and_save(entity_type: str, name: str, session: requests.Session, retri
             return 'saved'
         except Exception as e:
             if attempt < retries:
-                time.sleep(1 + attempt)
+                time.sleep(0.5 + attempt * 0.5)
             else:
                 log.warning("  FAIL %s '%s' (after %d attempts): %s", entity_type, name, retries + 1, e)
     return 'failed'
