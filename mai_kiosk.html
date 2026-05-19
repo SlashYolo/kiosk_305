@@ -87,6 +87,16 @@ input,button,select{font-family:inherit;}
   color:var(--c-text2);
   white-space:nowrap;text-align:right;line-height:1.2;
 }
+.nav__bell{
+  margin-left:auto;padding:6px 14px;
+  background:var(--c-al);border-radius:var(--r-f);
+  font-size:13px;font-weight:600;color:var(--c-accent);
+  white-space:nowrap;line-height:1.3;
+  display:none; /* показывается JS-ом когда актуально */
+}
+.nav__bell.active{display:flex;align-items:center;gap:6px;}
+.nav__bell .dot{width:7px;height:7px;border-radius:50%;background:var(--c-accent);animation:pulse 2s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
 /* ── BUTTONS ── */
 .btn{
@@ -647,6 +657,7 @@ h1, h2 { text-wrap: balance; }
       ЧаВо
     </button>
   </div>
+  <div class="nav__bell" id="bellIndicator"></div>
   <div class="nav__time" id="clock">
     <span id="clock-dow" style="font-size:12px;opacity:.7;letter-spacing:.06em;display:block;text-align:right;margin-bottom:1px;"></span>
     <span id="clock-date" style="font-size:12px;opacity:.7;display:block;text-align:right;margin-bottom:2px;"></span>
@@ -1110,7 +1121,16 @@ let currentSchedule = null;
 let currentWeek = 0;
 let selectedName = '';
 let searchDebounce = null;
-
+/* ── Расписание звонков МАИ ──────────────────────────────────── */
+const BELL_SCHEDULE = [
+  { n:1, start:[9,0],   end:[10,30] },
+  { n:2, start:[10,45], end:[12,15] },
+  { n:3, start:[13,0], end:[14,30] },
+  { n:4, start:[14,45], end:[16,15] },
+  { n:5, start:[16,30],  end:[18,0] },
+  { n:6, start:[18,15], end:[19,45] },
+  { n:7, start:[20,0], end:[21,30] },
+];
 const LESSON_TYPES = {
   'ЛК':      'type-lk',
   'ЛР':      'type-lr',
@@ -1132,9 +1152,39 @@ function updateClock() {
   document.getElementById('clock-time').textContent = h + ':' + m;
   document.getElementById('clock-date').textContent = `${d}.${mo}.${y}`;
   document.getElementById('clock-dow').textContent  = DOW_SHORT[now.getDay()];
+  updateBellIndicator(now);
 }
 updateClock();
 setInterval(updateClock, 1000);
+
+function updateBellIndicator(now) {
+  const el = document.getElementById('bellIndicator');
+  if (!el) return;
+  const mins = now.getHours() * 60 + now.getMinutes();
+  const dow = now.getDay();
+  if (dow === 0 || dow === 6) { el.classList.remove('active'); return; }
+  for (let i = 0; i < BELL_SCHEDULE.length; i++) {
+    const p = BELL_SCHEDULE[i];
+    const pS = p.start[0]*60+p.start[1], pE = p.end[0]*60+p.end[1];
+    if (mins >= pS && mins < pE) {
+      el.innerHTML = `<span class="dot"></span> ${p.n}-я пара · до конца ${pE-mins} мин`;
+      el.classList.add('active'); return;
+    }
+    const nx = BELL_SCHEDULE[i+1];
+    if (nx) {
+      const nS = nx.start[0]*60+nx.start[1];
+      if (mins >= pE && mins < nS) {
+        el.innerHTML = `☕ Перемена · ${nx.n}-я пара через ${nS-mins} мин`;
+        el.classList.add('active'); return;
+      }
+    }
+  }
+  const fS = BELL_SCHEDULE[0].start[0]*60+BELL_SCHEDULE[0].start[1];
+  if (mins < fS && mins >= fS-30) {
+    el.innerHTML = `📚 До 1-й пары ${fS-mins} мин`;
+    el.classList.add('active');
+  } else { el.classList.remove('active'); }
+}
 
 /* ══════════════════════════════════════════
    NAVIGATION
@@ -1467,14 +1517,23 @@ function renderSchedule(fromCache = false) {
     setNetStatusBar('cache', sub);
   }
 
+  const qrUrl = `https://mai.ru/education/studies/schedule/index.php#/${encodeURIComponent(schedName)}`;
+  const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrUrl)}&bgcolor=ffffff&color=0271FF`;
+
   let html = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px;">
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;">${schedName}</div>
-          ${fromCache ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:#FFF0F0;color:#C0392B;border-radius:var(--r-f);font-size:12px;font-weight:700;">📦 Из кэша</span>` : `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:#E6F7EE;color:#1A7A45;border-radius:var(--r-f);font-size:12px;font-weight:700;"><span style="width:6px;height:6px;border-radius:50%;background:#1A7A45;display:inline-block;"></span> Онлайн</span>`}
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;">${schedName}</div>
+            ${fromCache ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:#FFF0F0;color:#C0392B;border-radius:var(--r-f);font-size:12px;font-weight:700;">📦 Из кэша</span>` : `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:#E6F7EE;color:#1A7A45;border-radius:var(--r-f);font-size:12px;font-weight:700;"><span style="width:6px;height:6px;border-radius:50%;background:#1A7A45;display:inline-block;"></span> Онлайн</span>`}
+          </div>
+          <div style="font-size:14px;color:var(--c-text2);margin-top:4px;">${formatWeekLabel(currentWeek)}</div>
         </div>
-        <div style="font-size:14px;color:var(--c-text2);margin-top:4px;">${formatWeekLabel(currentWeek)}</div>
+        <!-- QR-код: сканируй чтобы открыть расписание на телефоне -->
+        <img src="${qrImg}" alt="QR" title="Сканируй — откроется расписание на телефоне"
+             style="width:64px;height:64px;border-radius:8px;border:2px solid var(--c-border);flex-shrink:0;"
+             onerror="this.style.display='none'">
       </div>
       <div class="week-nav">
         ${fromCache && !_useCache ? `<button class="btn btn--o btn--sm" onclick="fetchSchedule('${schedName.replace(/'/g,"\\'")}')">🔄 Обновить</button>` : ''}
@@ -2648,8 +2707,8 @@ function buildFaq() {
       <div class="faq-a">${f.a}</div>
     </div>`).join('');
 }
-buildFaq();
-buildLabs();
+try { buildFaq(); } catch(e){ console.error('buildFaq:', e); }
+try { buildLabs(); } catch(e){ console.error('buildLabs:', e); }
 
 function toggleFaq(btn) {
   const item = btn.closest('.faq-item');
@@ -2659,12 +2718,14 @@ function toggleFaq(btn) {
 }
 
 /* ══════════════════════════════════════════
-   INIT
+   INIT — каждый вызов обёрнут в try/catch,
+   чтобы один упавший не убил остальные
    ══════════════════════════════════════════ */
-loadGroups();
-buildTeachers305();
-openCacheDB().then(checkCacheUpdate);
-loadCacheLastUpdate();  // загружаем дату кэша и показываем в hint
+try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{}); } catch(e){ console.error('INIT SW:', e); }
+try { loadGroups(); } catch(e){ console.error('INIT loadGroups:', e); }
+try { buildTeachers305(); } catch(e){ console.error('INIT buildTeachers305:', e); }
+try { openCacheDB().then(checkCacheUpdate); } catch(e){ console.error('INIT openCacheDB:', e); }
+try { loadCacheLastUpdate(); } catch(e){ console.error('INIT loadCacheLastUpdate:', e); }
 toast('👋', 'Добро пожаловать! Выберите группу или преподавателя');
 
 // Close dropdown when clicking outside — но НЕ когда открыта клавиатура

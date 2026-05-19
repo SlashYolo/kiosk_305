@@ -3,7 +3,7 @@ MAI Kiosk — локальный прокси-сервер v3
 ========================================
 Запуск: python3 server.py   →   http://localhost:8765
 """
-import sys, os, json, logging, time, re, threading
+import sys, os, json, logging, time, re, threading, gzip
 from pathlib import Path
 from urllib.parse import quote
 
@@ -56,45 +56,50 @@ def fetch_api(path: str, timeout=15):
         return None, 502
 
 def read_disk_cache(entity_type: str, name: str):
-    path = CACHE / f"{entity_type}_{safe_name(name)}.json"
-    if path.exists():
-        try:
-            d = json.loads(path.read_text(encoding='utf-8'))
-            return d.get('data'), True
-        except Exception:
-            pass
+    """Читает кэш: сначала .json.gz, потом .json (обратная совместимость)."""
+    base = f"{entity_type}_{safe_name(name)}"
+    for ext, opener in [('.json.gz', lambda p: gzip.open(p, 'rt', encoding='utf-8')),
+                        ('.json',    lambda p: open(p, 'r', encoding='utf-8'))]:
+        path = CACHE / (base + ext)
+        if path.exists():
+            try:
+                with opener(path) as f:
+                    d = json.loads(f.read())
+                return d.get('data'), True
+            except Exception:
+                pass
     return None, False
 
 def write_disk_cache(name: str, data: dict):
+    """Сохраняет кэш в .json.gz (в ~5-7 раз меньше, чем .json)."""
     days  = data.get('days', [])
     etype = 'group'
     if days and days[0].get('lessons'):
         grps = days[0]['lessons'][0].get('groups', [])
         if grps:
             etype = 'teacher'
-    path = CACHE / f"{etype}_{safe_name(name)}.json"
+    path = CACHE / f"{etype}_{safe_name(name)}.json.gz"
     try:
-        path.write_text(
-            json.dumps({'type': etype, 'name': name, 'data': data, 'ts': time.time()},
-                       ensure_ascii=False),
-            encoding='utf-8')
+        with gzip.open(path, 'wt', encoding='utf-8', compresslevel=6) as f:
+            f.write(json.dumps({'type': etype, 'name': name, 'data': data, 'ts': time.time()},
+                               ensure_ascii=False))
     except Exception as e:
         log.warning("Cache write error: %s", e)
 
 def iter_cache_names(etype: str) -> list:
-    """Быстрый список имён из кэша — по именам файлов, без чтения содержимого.
-    group_М3О-505С-21.json → 'М3О-505С-21'
-    teacher_Иванов_Иван_Иванович.json → 'Иванов Иван Иванович'"""
+    """Быстрый список имён из кэша — по именам файлов (.json и .json.gz)."""
     prefix = f"{etype}_"
-    names = []
-    for path in sorted(CACHE.glob(f"{prefix}*.json")):
-        if path.name.startswith('_'):
-            continue
-        raw = path.stem[len(prefix):]   # убираем 'group_' / 'teacher_'
-        name = raw.replace('_', ' ')    # safe_filename заменял пробелы на _
-        if name:
-            names.append(name)
-    return names
+    names = set()
+    for ext in ('*.json', '*.json.gz'):
+        for path in CACHE.glob(f"{prefix}{ext}"):
+            if path.name.startswith('_'):
+                continue
+            stem = path.name.replace('.json.gz', '').replace('.json', '')
+            raw = stem[len(prefix):]
+            name = raw.replace('_', ' ')
+            if name:
+                names.add(name)
+    return sorted(names)
 
 
 def iter_cache_index(etype: str):
@@ -634,6 +639,18 @@ def logo():
         f = KIOSK_DIR / f'logo.{ext}'
         if f.exists():
             return send_from_directory(str(KIOSK_DIR), f'logo.{ext}', conditional=True)
+    return '', 404
+
+
+@app.route('/sw.js')
+def service_worker():
+    """Service Worker — отдаётся с корня для правильного scope."""
+    f = KIOSK_DIR / 'sw.js'
+    if f.exists():
+        resp = send_from_directory(str(KIOSK_DIR), 'sw.js')
+        resp.headers['Service-Worker-Allowed'] = '/'
+        resp.headers['Cache-Control'] = 'no-cache'
+        return resp
     return '', 404
 
 
