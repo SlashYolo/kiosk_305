@@ -88,7 +88,7 @@ input,button,select{font-family:inherit;}
   white-space:nowrap;text-align:right;line-height:1.2;
 }
 .nav__bell{
-  margin-left:auto;padding:6px 14px;
+  margin-left:auto;margin-right:12px;padding:6px 14px;
   background:var(--c-al);border-radius:var(--r-f);
   font-size:13px;font-weight:600;color:var(--c-accent);
   white-space:nowrap;line-height:1.3;
@@ -792,54 +792,6 @@ h1, h2 { text-wrap: balance; }
 
       <hr class="divider" style="margin-bottom:60px;">
 
-      <!-- Преподаватели -->
-      <div class="section-label">Коллектив</div>
-      <h2 class="section-title reveal">Руководство и профессора</h2>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:60px;">
-        <div class="person-card reveal">
-          <div class="avatar">АД</div>
-          <div>
-            <div style="font-weight:700;font-size:15px;">Антонов Дмитрий Александрович</div>
-            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Заведующий кафедрой, д.т.н., профессор</div>
-          </div>
-        </div>
-        <div class="person-card reveal rd1">
-          <div class="avatar" style="background:#FFF0F9;color:#C026D3;">НМ</div>
-          <div>
-            <div style="font-weight:700;font-size:15px;">Нгуен Ныы Ман</div>
-            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Доцент, к.т.н.</div>
-          </div>
-        </div>
-        <div class="person-card reveal rd2">
-          <div class="avatar" style="background:#F0FFF4;color:#16A34A;">ИВ</div>
-          <div>
-            <div style="font-weight:700;font-size:15px;">Иванов Виктор Сергеевич</div>
-            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Профессор, д.т.н.</div>
-          </div>
-        </div>
-        <div class="person-card reveal rd1">
-          <div class="avatar" style="background:#FFFBEB;color:#D97706;">КА</div>
-          <div>
-            <div style="font-weight:700;font-size:15px;">Козлов Андрей Петрович</div>
-            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Доцент, к.т.н.</div>
-          </div>
-        </div>
-        <div class="person-card reveal rd2">
-          <div class="avatar" style="background:#FFF0F0;color:#DC2626;">СМ</div>
-          <div>
-            <div style="font-weight:700;font-size:15px;">Смирнов Михаил Игоревич</div>
-            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Ст. преподаватель</div>
-          </div>
-        </div>
-        <div class="person-card reveal rd3">
-          <div class="avatar" style="background:#F3E8FF;color:#7C3AED;">ЛА</div>
-          <div>
-            <div style="font-weight:700;font-size:15px;">Лебедева Анна Николаевна</div>
-            <div style="font-size:12px;color:var(--c-text2);margin-top:3px;">Доцент, к.т.н.</div>
-          </div>
-        </div>
-      </div>
-
       <!-- Лаборатории -->
       <hr class="divider" style="margin-bottom:60px;">
       <div class="section-label">Инфраструктура</div>
@@ -1115,22 +1067,24 @@ h1, h2 { text-wrap: balance; }
    ══════════════════════════════════════════ */
 const API = 'http://localhost:8765/api';
 let searchType = 'group';
+
+/* ── Расписание звонков МАИ ──────────────────────────────────── */
+const BELL_SCHEDULE = [
+  { n:1, start:[9,0],   end:[10,30] },
+  { n:2, start:[10,45], end:[12,15] },
+  { n:3, start:[13,0],  end:[14,30] },
+  { n:4, start:[14,45], end:[16,15] },
+  { n:5, start:[16,30], end:[18,0]  },
+  { n:6, start:[18,15], end:[19,45] },
+  { n:7, start:[20,0],  end:[21,30] },
+];
 let allGroups   = [];
 let allTeachers = [];
 let currentSchedule = null;
 let currentWeek = 0;
 let selectedName = '';
 let searchDebounce = null;
-/* ── Расписание звонков МАИ ──────────────────────────────────── */
-const BELL_SCHEDULE = [
-  { n:1, start:[9,0],   end:[10,30] },
-  { n:2, start:[10,45], end:[12,15] },
-  { n:3, start:[13,0], end:[14,30] },
-  { n:4, start:[14,45], end:[16,15] },
-  { n:5, start:[16,30],  end:[18,0] },
-  { n:6, start:[18,15], end:[19,45] },
-  { n:7, start:[20,0], end:[21,30] },
-];
+
 const LESSON_TYPES = {
   'ЛК':      'type-lk',
   'ЛР':      'type-lr',
@@ -1157,6 +1111,7 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
+/* ── Индикатор текущей пары ───────────────────────────────────── */
 function updateBellIndicator(now) {
   const el = document.getElementById('bellIndicator');
   if (!el) return;
