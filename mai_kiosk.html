@@ -88,7 +88,7 @@ input,button,select{font-family:inherit;}
   white-space:nowrap;text-align:right;line-height:1.2;
 }
 .nav__bell{
-  margin-left:auto;margin-right:12px;padding:6px 14px;
+  margin-left:auto;margin-right:12px;padding:6px 18px 6px 20px;
   background:var(--c-al);border-radius:var(--r-f);
   font-size:13px;font-weight:600;color:var(--c-accent);
   white-space:nowrap;line-height:1.3;
@@ -790,8 +790,6 @@ h1, h2 { text-wrap: balance; }
         </div>
       </div>
 
-      <hr class="divider" style="margin-bottom:60px;">
-
       <!-- Лаборатории -->
       <hr class="divider" style="margin-bottom:60px;">
       <div class="section-label">Инфраструктура</div>
@@ -1451,7 +1449,7 @@ function navigateToSchedule(name, type) {
   // Маленькая задержка чтобы UI-табы успели переключиться
   setTimeout(() => {
     selectItem(name);
-    document.getElementById('schedResult')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var _sr = document.getElementById('schedResult'); if(_sr) _sr.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 50);
 }
 
@@ -1801,8 +1799,8 @@ function openLabModal(id){
   }
 
   if (showNav){
-    modal.querySelector('#labCarPrev')?.addEventListener('click', () => { goTo(slideIdx - 1); resetAuto(); });
-    modal.querySelector('#labCarNext')?.addEventListener('click', () => { goTo(slideIdx + 1); resetAuto(); });
+    var _lp = modal.querySelector('#labCarPrev'); if(_lp) _lp.addEventListener('click', () => { goTo(slideIdx - 1); resetAuto(); });
+    var _ln = modal.querySelector('#labCarNext'); if(_ln) _ln.addEventListener('click', () => { goTo(slideIdx + 1); resetAuto(); });
     modal.querySelectorAll('.carousel__dot').forEach(d => {
       d.addEventListener('click', () => { goTo(parseInt(d.dataset.idx, 10)); resetAuto(); });
     });
@@ -2101,7 +2099,7 @@ async function getCachedSchedule(name) {
     const db = await openCacheDB();
     return new Promise((res) => {
       const req = db.transaction('schedules').objectStore('schedules').get(name);
-      req.onsuccess = () => res(req.result?.data || null);
+      req.onsuccess = () => res((req.result && req.result.data) || null);
       req.onerror   = () => res(null);
     });
   } catch(e) { return null; }
@@ -2112,7 +2110,7 @@ async function getLastUpdateTime() {
     const db = await openCacheDB();
     return new Promise((res) => {
       const req = db.transaction('meta').objectStore('meta').get('last_update');
-      req.onsuccess = () => res(req.result?.ts || 0);
+      req.onsuccess = () => res((req.result && req.result.ts) || 0);
       req.onerror   = () => res(0);
     });
   } catch(e) { return 0; }
@@ -2243,7 +2241,7 @@ async function loadCacheLastUpdate() {
       });
       // Обновляем hint с датой
       const groups_ok = d.groups_ok || 0, teachers_ok = d.teachers_ok || 0;
-      const hintIcon = document.getElementById('searchHint')?.querySelector('svg');
+      var _sh = document.getElementById('searchHint'); const hintIcon = _sh ? _sh.querySelector('svg') : null;
       setHint(
         `Кэш от ${_cacheLastUpdate} · ${groups_ok} групп, ${teachers_ok} преподавателей`,
         true
@@ -2311,7 +2309,7 @@ setInterval(() => {
 }, AFK_CHECK_MS);
 
 // Если /on.mp4 отдаёт 404 или битый файл — отключаем заставку насовсем
-document.getElementById('afkVideo')?.addEventListener('error', () => {
+var _av = document.getElementById('afkVideo'); if(_av) _av.addEventListener('error', () => {
   _afkDisabled = true;
   console.warn('[AFK] видео не загружено (нет on.mp4 или битый кодек) — заставка отключена');
 });
@@ -2342,8 +2340,8 @@ async function pollCacheProgress(){
       // Если шло, а потом завершилось — покажем "Готово" на 4 сек
       if (_cacheBannerWasShown && (p.phase === 'done' || p.phase === 'stale' || p.phase === 'aborted')) {
         title.textContent = p.phase === 'stale' ? 'Обновление прервано' : 'Расписание обновлено';
-        const total = (p.groups?.saved||0) + (p.teachers?.saved||0) + (p.pubs?.saved||0);
-        const skip  = (p.groups?.skipped||0) + (p.teachers?.skipped||0) + (p.pubs?.skipped||0);
+        const total = ((p.groups&&p.groups.saved)||0) + ((p.teachers&&p.teachers.saved)||0) + ((p.pubs&&p.pubs.saved)||0);
+        const skip  = ((p.groups&&p.groups.skipped)||0) + ((p.teachers&&p.teachers.skipped)||0) + ((p.pubs&&p.pubs.skipped)||0);
         sub.textContent = `Обновлено: ${total}, без изменений: ${skip}`;
         fill.style.width = '100%';
         banner.querySelector('.cache-banner__spin').style.display = 'none';
@@ -2392,7 +2390,7 @@ async function pollCacheProgress(){
     banner.classList.add('show');
   } catch(e) {
     // Сеть отвалилась — просто прячем
-    document.getElementById('cacheBanner')?.classList.remove('show');
+    var _cb = document.getElementById('cacheBanner'); if(_cb) _cb.classList.remove('show');
   }
 }
 setInterval(pollCacheProgress, CACHE_POLL_MS);
@@ -2748,10 +2746,10 @@ function kbConfirm() {
       let best = null;
       if (searchType === 'group') {
         const exact = allGroups.find(g => g.name.toLowerCase() === q);
-        best = exact ? exact.name : (allGroups.filter(g => g.name.toLowerCase().includes(q))[0]?.name);
+        best = exact ? exact.name : (function(a){var m=a.filter(function(g){return g.name.toLowerCase().includes(q)}); return m.length?m[0].name:undefined;}(allGroups));
       } else if (searchType === 'teacher') {
         const exact = allTeachers.find(t => t.name.toLowerCase() === q);
-        best = exact ? exact.name : (allTeachers.filter(t => t.name.toLowerCase().includes(q))[0]?.name);
+        best = exact ? exact.name : (function(a){var m=a.filter(function(t){return t.name.toLowerCase().includes(q)}); return m.length?m[0].name:undefined;}(allTeachers));
       }
       // Если нет в кэшированном списке — ищем напрямую по введённому
       selectItem(best || kbValue.trim());
