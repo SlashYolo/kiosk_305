@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>МАИ — Информационный стенд</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -38,7 +38,7 @@
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth;}
-body{background:var(--c-bg);color:var(--c-text);font-family:'Manrope',system-ui,sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden;padding-bottom:96px;}
+body{background:var(--c-bg);color:var(--c-text);font-family:'Manrope',system-ui,sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden;padding-bottom:96px;touch-action:pan-y;-ms-touch-action:pan-y;}
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--c-border);border-radius:99px;}
@@ -365,7 +365,7 @@ img.avatar.avatar--photo{
 h1, h2 { text-wrap: balance; }
 .heading-nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.page-body{flex:1;overflow-y:auto;}
+.page-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
 .inner{max-width:1400px;margin:0 auto;padding:0 64px;}
 
 /* ── FAQ ── */
@@ -479,7 +479,7 @@ h1, h2 { text-wrap: balance; }
 .exit-toast__btns{display:flex;gap:14px;justify-content:center;}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:fadeIn .25s var(--ease-o) both;}
 .modal-bg.out{animation:none;opacity:0;transition:opacity .25s;}
-.modal{background:white;border-radius:var(--r-2xl);padding:48px;max-width:680px;width:90%;max-height:85vh;overflow-y:auto;animation:scaleIn .35s var(--ease-s) both;}
+.modal{background:white;border-radius:var(--r-2xl);padding:48px;max-width:680px;width:90%;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;animation:scaleIn .35s var(--ease-s) both;}
 .modal-close{position:absolute;top:20px;right:20px;width:40px;height:40px;border-radius:50%;background:var(--c-bg2);border:none;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background var(--dur-f);}
 .modal-close:hover{background:var(--c-bg3);}
 
@@ -1000,6 +1000,121 @@ h1, h2 { text-wrap: balance; }
 <div class="news-bar" id="newsBar"></div>
 
 <script>
+/* ══════════════════════════════════════════════════════════
+   POLYFILLS — совместимость со старыми браузерами (Firefox 66+)
+   ══════════════════════════════════════════════════════════ */
+// AbortSignal.timeout — появился в Firefox 100, полифилл для <100
+if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
+  AbortSignal.timeout = function(ms) {
+    var c = new AbortController();
+    setTimeout(function() { c.abort(); }, ms);
+    return c.signal;
+  };
+}
+// Безопасная обёртка: если signal не создался — fetch пойдёт без таймаута
+function _safeTimeout(ms) {
+  try { return AbortSignal.timeout(ms); } catch(e) { return undefined; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   TOUCH GESTURES — сенсорное управление для ТВ-стенда
+   ══════════════════════════════════════════════════════════
+   Разрешено:
+     ✓ Скролл одним / двумя пальцами (по вертикали)
+     ✓ Тап / клик
+     ✓ Свайп по карусели
+   Заблокировано:
+     ✗ Pinch-to-zoom (двойной зум)
+     ✗ Тройное и более касание
+     ✗ Долгое нажатие (контекстное меню)
+     ✗ Drag-and-drop файлов
+     ✗ Любые жесты выхода из оболочки
+*/
+(function touchKiosk() {
+  // 1. Блокируем pinch-zoom на уровне жестов
+  document.addEventListener('touchstart', function(e) {
+    // 3+ пальца — блокируем полностью
+    if (e.touches.length >= 3) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+  }, { passive: false, capture: true });
+
+  // 2. Блокируем pinch-zoom при движении двумя пальцами
+  //    но разрешаем скролл двумя пальцами (вертикальный)
+  var _lastTouchY = null;
+  var _touchScrollEl = null;
+
+  document.addEventListener('touchmove', function(e) {
+    // 3+ пальца — блок
+    if (e.touches.length >= 3) {
+      e.preventDefault();
+      return;
+    }
+    // 2 пальца: разрешаем только вертикальный скролл, блокируем pinch
+    if (e.touches.length === 2) {
+      var t0 = e.touches[0], t1 = e.touches[1];
+      var dx = Math.abs(t0.clientX - t1.clientX);
+      var dy = Math.abs(t0.clientY - t1.clientY);
+      // Если пальцы двигаются в разные стороны по X — это pinch, блокируем
+      // Но разрешаем синхронный вертикальный скролл
+      // Проще: если расстояние между пальцами стабильно — скролл, иначе pinch
+      // Используем простое правило: блокируем event чтобы браузер не зумил,
+      // но делаем программный скролл
+      e.preventDefault();
+      var avgY = (t0.clientY + t1.clientY) / 2;
+      if (_lastTouchY !== null && _touchScrollEl) {
+        var deltaY = _lastTouchY - avgY;
+        _touchScrollEl.scrollTop += deltaY;
+      }
+      _lastTouchY = avgY;
+      // Ищем скроллабельный контейнер
+      if (!_touchScrollEl) {
+        _touchScrollEl = _findScrollable(e.target);
+      }
+      return;
+    }
+  }, { passive: false, capture: false });
+
+  document.addEventListener('touchend', function(e) {
+    if (e.touches.length === 0) {
+      _lastTouchY = null;
+      _touchScrollEl = null;
+    }
+  }, { passive: true });
+
+  // Помощник: находит ближайший скроллабельный родитель
+  function _findScrollable(el) {
+    while (el && el !== document.body) {
+      var style = window.getComputedStyle(el);
+      var ov = style.overflowY;
+      if ((ov === 'auto' || ov === 'scroll') && el.scrollHeight > el.clientHeight) {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+
+  // 3. Блокируем двойной тап (zoom) на всём документе
+  var _lastTap = 0;
+  document.addEventListener('touchend', function(e) {
+    var now = Date.now();
+    if (now - _lastTap < 300) {
+      e.preventDefault();
+    }
+    _lastTap = now;
+  }, { passive: false, capture: true });
+
+  // 4. Дополнительная CSS-защита от зума
+  var meta = document.querySelector('meta[name="viewport"]');
+  if (meta) {
+    meta.setAttribute('content',
+      'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+  }
+})();
+
 /* ══════════════════════════════════════════════════════════
    KIOSK LOCKDOWN — блокировка всего что может увести фокус
    ══════════════════════════════════════════════════════════
@@ -1850,8 +1965,11 @@ const FAQS = [
 const TEACHERS_305 = [
   { name: 'Алешин Борис Сергеевич',         role: 'зав. кафедрой',    degree: 'Доктор технических наук', title: 'Старший научный сотрудник, акад. РАН', guid: 'b0062582-1d99-11e0-9baf-1c6f65450efa' },
   { name: 'Афонин Александр Анатольевич',   role: 'доцент',           degree: 'Кандидат технических наук', title: 'Доцент', guid: 'b0062590-1d99-11e0-9baf-1c6f65450efa' },
+  { name: 'Белобжеский Леонид Антонович',  role: 'доцент',           degree: 'Кандидат технических наук', title: 'Доцент', guid: '578c17f1-1d99-11e0-9baf-1c6f65450efa' },
   { name: 'Веремеенко Константин Константинович', role: 'доцент',     degree: 'Кандидат технических наук', title: 'Доцент', guid: '8062e196-1d99-11e0-9baf-1c6f65450efa' },
+  { name: 'Захарян Рамаз Рафаэлович',      role: 'доцент',           degree: 'Кандидат технических наук', title: 'Доцент', guid: '79d464a1-1d99-11e0-9baf-1c6f65450efa' },
   { name: 'Кошелев Борис Валентинович',     role: 'доцент',           degree: 'Кандидат технических наук', title: 'Доцент', guid: '578c17f8-1d99-11e0-9baf-1c6f65450efa' },
+  { name: 'Курис Эдуард Давыдович',         role: 'ст. научный сотрудник', degree: 'Кандидат технических наук', title: '', guid: '' },
   { name: 'Антонов Дмитрий Александрович',  role: 'доцент',           degree: 'Кандидат технических наук', title: '', guid: 'eb7d5e30-1d99-11e0-9baf-1c6f65450efa' },
   { name: 'Нгуен Ныы Ман',                  role: 'доцент',           degree: 'Кандидат технических наук', title: '', guid: '05816da9-3656-11e3-9343-3cd92bf20bfe' },
   { name: 'Сурков Дмитрий Александрович',   role: 'доцент',           degree: 'Кандидат технических наук', title: '', guid: 'e4a9bc9c-1d99-11e0-9baf-1c6f65450efa' },
@@ -1888,28 +2006,31 @@ const TEACHER_PHOTOS = {
   // и фотка подцепится. Если файла нет — покажется кружок с инициалами.
   // Имена выбраны транслитерацией фамилии, можешь переименовать как удобнее
   // (только не забудь поменять и здесь, и файл в папке).
-  'b0062582-1d99-11e0-9baf-1c6f65450efa': 'aleshin.jpg',         // Алешин Б.С.
-  'b0062590-1d99-11e0-9baf-1c6f65450efa': 'afonin.jpg',          // Афонин А.А.
-  '8062e196-1d99-11e0-9baf-1c6f65450efa': 'veremeenko.jpg',      // Веремеенко К.К.
-  '578c17f8-1d99-11e0-9baf-1c6f65450efa': 'koshelev.jpg',        // Кошелев Б.В.
-  'eb7d5e30-1d99-11e0-9baf-1c6f65450efa': 'antonov.jpg',         // Антонов Д.А.
-  '05816da9-3656-11e3-9343-3cd92bf20bfe': 'nguyen.jpg',          // Нгуен Ныы Ман
-  'e4a9bc9c-1d99-11e0-9baf-1c6f65450efa': 'surkov.jpg',          // Сурков Д.А.
-  'f253618c-1d99-11e0-9baf-1c6f65450efa': 'zharkov.jpg',         // Жарков М.В.
-  '28e11301-1d9b-11e0-9baf-1c6f65450efa': 'kuznetsov.jpg',       // Кузнецов И.М.
-  '95d76d89-77f8-11e1-86e1-00304866c649': 'lelkov.jpg',          // Лельков К.С.
-  '1847ff04-03c3-11e2-9a50-3cd92bf20bff': 'mishin.jpg',          // Мишин Ю.Н.
-  '2f38b9d1-1d9b-11e0-9baf-1c6f65450efa': 'petruhin.jpg',        // Петрухин В.А.
-  'd6097880-1d9a-11e0-9baf-1c6f65450efa': 'pronkin.jpg',         // Пронькин А.Н.
-  'ae2912f4-a1e8-11e7-b412-485b3919ee6d': 'ryabinkin.jpg',       // Рябинкин М.С.
-  '2aee59b5-f63c-11e9-9246-485b3919ee6d': 'savkin.jpg',          // Савкин А.В.
-  '90d920a5-1d9a-11e0-9baf-1c6f65450efa': 'ushakov.jpg',         // Ушаков А.Н.
-  '2f38b9ce-1d9b-11e0-9baf-1c6f65450efa': 'horev.jpg',           // Хорев Т.С.
-  '0e0fb874-4055-11e7-b024-3cd92bf20bfe': 'kolganov.jpg',        // Колганов Л.А.
-  'd4a78fa7-5606-11ed-bbea-ac1f6b64c5eb': 'kalinina.jpg',        // Калинина О.И.
-  '0ad2ae84-0f4d-11ee-bc01-3cecef1c132f': 'matyushenko.jpg',     // Матюшенко Р.В.
-  '1b1b73fa-2e23-11ef-bc19-3cecef1c132f': 'rychkov.jpg',         // Рычков А.С.
-  '5ab9e990-9147-11ef-bc24-3cecef1c132f': 'uchaeva.jpg',         // Учаева Е.А.
+  'b0062582-1d99-11e0-9baf-1c6f65450efa': 'Aleshin.png',         // Алешин Б.С.
+  'b0062590-1d99-11e0-9baf-1c6f65450efa': 'Afonin.png',          // Афонин А.А.
+  '578c17f1-1d99-11e0-9baf-1c6f65450efa': 'Belobzheskiy.png',    // Белобжеский Л.А.
+  '8062e196-1d99-11e0-9baf-1c6f65450efa': 'Veremeenko.png',      // Веремеенко К.К.
+  '79d464a1-1d99-11e0-9baf-1c6f65450efa': 'Zakharyan.png',       // Захарян Р.Р.
+  '578c17f8-1d99-11e0-9baf-1c6f65450efa': 'Koshelev.png',        // Кошелев Б.В.
+  'Курис Эдуард Давыдович':               'Kuris.png',           // Курис Э.Д. (нет GUID — ключ по ФИО)
+  'eb7d5e30-1d99-11e0-9baf-1c6f65450efa': 'Antonov.png',         // Антонов Д.А.
+  '05816da9-3656-11e3-9343-3cd92bf20bfe': 'Nguyen.png',          // Нгуен Ныы Ман
+  'e4a9bc9c-1d99-11e0-9baf-1c6f65450efa': 'Surkov.png',          // Сурков Д.А.
+  'f253618c-1d99-11e0-9baf-1c6f65450efa': 'Zharkov.png',         // Жарков М.В.
+  '28e11301-1d9b-11e0-9baf-1c6f65450efa': 'Kuznetsov.png',       // Кузнецов И.М.
+  '95d76d89-77f8-11e1-86e1-00304866c649': 'Lelkov.png',          // Лельков К.С.
+  '1847ff04-03c3-11e2-9a50-3cd92bf20bff': 'Mishin.png',          // Мишин Ю.Н.
+  '2f38b9d1-1d9b-11e0-9baf-1c6f65450efa': 'Petruhin.png',        // Петрухин В.А.
+  'd6097880-1d9a-11e0-9baf-1c6f65450efa': 'Pronkin.png',         // Пронькин А.Н.
+  'ae2912f4-a1e8-11e7-b412-485b3919ee6d': 'Ryabinkin.png',       // Рябинкин М.С.
+  '2aee59b5-f63c-11e9-9246-485b3919ee6d': 'Savkin.png',          // Савкин А.В.
+  '90d920a5-1d9a-11e0-9baf-1c6f65450efa': 'Ushakov.png',         // Ушаков А.Н.
+  '2f38b9ce-1d9b-11e0-9baf-1c6f65450efa': 'Horev.png',           // Хорев Т.С.
+  '0e0fb874-4055-11e7-b024-3cd92bf20bfe': 'Kolganov.png',        // Колганов Л.А.
+  'd4a78fa7-5606-11ed-bbea-ac1f6b64c5eb': 'Kalinina.png',        // Калинина О.И.
+  '0ad2ae84-0f4d-11ee-bc01-3cecef1c132f': 'Matyushenko.png',     // Матюшенко Р.В.
+  '1b1b73fa-2e23-11ef-bc19-3cecef1c132f': 'Rychkov.png',         // Рычков А.С.
+  '5ab9e990-9147-11ef-bc24-3cecef1c132f': 'Uchaeva.png',         // Учаева Е.А.
 };
 
 // Фолбэк-функция вызывается из onerror у <img>, заменяет битую картинку на кружок с инициалами
@@ -2178,9 +2299,9 @@ function setNetStatusBar(mode, extraSub) {
 
 async function checkNetwork() {
   try {
-    const r = await fetch(`${API}/health`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+    const r = await fetch(`${API}/health`, { cache: 'no-store', signal: _safeTimeout(4000) });
     return r.ok;
-  } catch { return false; }
+  } catch(_e) { return false; }
 }
 
 // Монитор запускается каждые 5 секунд
@@ -2230,7 +2351,7 @@ async function networkMonitorTick() {
 // Загружаем дату последнего обновления кэша с сервера
 async function loadCacheLastUpdate() {
   try {
-    const r = await fetch(`${API}/cache-status`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+    const r = await fetch(`${API}/cache-status`, { cache: 'no-store', signal: _safeTimeout(4000) });
     if (!r.ok) return;
     const d = await r.json();
     if (d.updated) {
@@ -2247,7 +2368,7 @@ async function loadCacheLastUpdate() {
         true
       );
     }
-  } catch { /* сервер не вернул данные — не страшно */ }
+  } catch(_e) { /* сервер не вернул данные — не страшно */ }
 }
 
 // Запускаем монитор
@@ -2493,7 +2614,7 @@ async function fetchSchedule(name) {
 
   try {
     const encoded = encodeURIComponent(name);
-    const r = await fetch(`${API}/schedule/${encoded}`, { signal: AbortSignal.timeout(8000) });
+    const r = await fetch(`${API}/schedule/${encoded}`, { signal: _safeTimeout(8000) });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     currentSchedule = data;
